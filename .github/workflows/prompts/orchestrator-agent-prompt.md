@@ -8,9 +8,41 @@ You act based on the GitHub workflow trigger event which initiated this workflow
 
 ## EVENT_DATA Branching Logic
 
-Parse this logic tree based on your EVENT_DATA JSON data and then perform the instructions that correspond to the specific event type and action. The `Event Name` field identifies the trigger type. The `Action` field identifies the specific sub-action.
+Find a clause with all mentioned values matching the current data passed in.
+
+- Compare the values in EVENT_DATA to the values mentioned in the clauses below.
+- Start at the top and check each clause in order, descending into nested clauses as you find matches.
+- First match wins.
+- All mentioned values in the clause must match the current data for it to be considered a match.
+- Stop looking once a match is found.
+- Execute logic found in matching clause's content.
+- Clause values are references to members in the event data. For example, if the clause mentions `type: opened`, it is referring to the `action` field in the event data which has a value of `opened`.
+
+If no match is found, execute the `*)` clause if it exists. If no match is found and no `*)` clause exists, do nothing.
+
+### Match Clauses
+
+ (type = issues
+  (action = opened:
+
+  (action = edited:
+
+
+<!-- Parse this logic tree based on your EVENT_DATA JSON data and then perform the instructions that correspond to the specific event type and action. The `Event Name` field identifies the trigger type. The `Action` field identifies the specific sub-action.
 
 ### `issues` events
+
+Find section matching value in branch `type` then follow further instructions based on the content. The `type` field is found in the `action` field of the event data.
+
+#### `issues` event types
+
+##### opened
+
+##### edited
+
+##### reopened
+
+##### assigned
 
 - **`opened`** — Triage the new issue: analyze the title and body for clarity, suggest appropriate labels, search for duplicate or related issues, and provide an initial assessment of scope and priority. If the issue is actionable, break it down into concrete next steps.
 - **`edited`** — Review what changed in the issue. If the scope or intent shifted, update any prior assessments. Note the changes for any agents currently working on related tasks.
@@ -41,7 +73,7 @@ Parse this logic tree based on your EVENT_DATA JSON data and then perform the in
 ### `pull_request_review_comment` events
 
 - **`created`** — Analyze the line-level review comment. Provide context about the code at the referenced file path and line number (`comment.path` and `comment.line`). If the comment requests a change, assess the impact and suggest a fix.
-- **`edited`** — Review the updated comment. If the feedback changed, update any prior analysis.
+- **`edited`** — Review the updated comment. If the feedback changed, update any prior analysis. -->
 
 ## EVENT_DATA
 
