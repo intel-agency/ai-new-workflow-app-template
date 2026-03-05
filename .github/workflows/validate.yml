@@ -75,6 +75,14 @@ jobs:
         run: |
           IMAGE="ghcr.io/${{ github.repository }}/devcontainer:main-latest"
           docker pull "$IMAGE" || true
+          # If prebuilt image is not available yet, build a local fallback image
+          # so devcontainers/ci can still run smoke tests on this commit.
+          if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
+            docker build \
+              -f .github/.devcontainer/Dockerfile \
+              -t "$IMAGE" \
+              .github/.devcontainer
+          fi
           # Strip stale devcontainer.metadata label from cached prebuild
           if docker image inspect "$IMAGE" > /dev/null 2>&1; then
             echo "FROM $IMAGE" | docker build --label devcontainer.metadata='[]' -t "$IMAGE" -
