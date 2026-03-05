@@ -84,7 +84,7 @@ jobs:
 
       - name: Verify devcontainer image exists
         run: |
-          IMAGE="ghcr.io/intel-agency/workflow-orchestration/devcontainer:main-latest"
+          IMAGE="ghcr.io/${{ github.repository }}/devcontainer:main-latest"
           if ! docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
             echo "::error::Devcontainer image not found: $IMAGE"
             echo "::error::Run the 'Publish Docker' and 'Pre-build dev container image' workflows first."
@@ -93,7 +93,7 @@ jobs:
 
       - name: Pull and clean devcontainer image metadata
         run: |
-          IMAGE="ghcr.io/intel-agency/workflow-orchestration/devcontainer:main-latest"
+          IMAGE="ghcr.io/${{ github.repository }}/devcontainer:main-latest"
           docker pull "$IMAGE"
           # Strip stale devcontainer.metadata label accumulated from prior prebuilds
           # so only the current devcontainer.json config applies at runtime
