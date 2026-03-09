@@ -8,6 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       curl unzip git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Node.js 20 LTS (needed for MCP server packages)
+ARG NODE_MAJOR=20
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
 # .NET SDK 10.0.102 LTS
 RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin \
       --version 10.0.102 \

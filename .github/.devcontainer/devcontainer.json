@@ -1,6 +1,6 @@
 {
   "name": "ai-new-workflow-app-template-build",
-  "image": "ghcr.io/nam20485/ai-new-workflow-app-template:main-latest",
+  "image": "ghcr.io/intel-agency/ai-new-workflow-app-template:main-latest",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20"
