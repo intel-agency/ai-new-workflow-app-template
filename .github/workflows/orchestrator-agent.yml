@@ -91,13 +91,8 @@ jobs:
             exit 1
           fi
 
-      - name: Pull and clean devcontainer image metadata
-        run: |
-          IMAGE="ghcr.io/${{ github.repository }}/devcontainer:main-latest"
-          docker pull "$IMAGE"
-          # Strip stale devcontainer.metadata label accumulated from prior prebuilds
-          # so only the current devcontainer.json config applies at runtime
-          echo "FROM $IMAGE" | docker build --label devcontainer.metadata='[]' -t "$IMAGE" -
+      - name: Pull devcontainer image
+        run: docker pull "ghcr.io/${{ github.repository }}/devcontainer:main-latest"
 
       - name: Install devcontainer CLI
         run: npm install -g @devcontainers/cli
@@ -106,7 +101,7 @@ jobs:
         run: |
           devcontainer up \
             --workspace-folder . \
-            --config .github/.devcontainer/devcontainer.json
+            --config .devcontainer/devcontainer.json
 
       - name: Execute orchestrator agent in devcontainer
         env:
@@ -115,7 +110,7 @@ jobs:
         run: |
           devcontainer exec \
             --workspace-folder . \
-            --config .github/.devcontainer/devcontainer.json \
+            --config .devcontainer/devcontainer.json \
             --remote-env ZHIPU_API_KEY="$ZHIPU_API_KEY" \
             --remote-env GITHUB_TOKEN="$GITHUB_TOKEN" \
             -- bash ./prompt.sh -f "$ORCHESTRATOR_PROMPT_PATH"
