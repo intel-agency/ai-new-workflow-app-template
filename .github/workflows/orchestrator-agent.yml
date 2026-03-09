@@ -101,7 +101,7 @@ jobs:
         run: |
           devcontainer up \
             --workspace-folder . \
-            --config .devcontainer/devcontainer.json
+            --image ghcr.io/${{ github.repository }}/devcontainer:main-latest
 
       - name: Execute orchestrator agent in devcontainer
         env:
@@ -110,7 +110,7 @@ jobs:
         run: |
           devcontainer exec \
             --workspace-folder . \
-            --config .devcontainer/devcontainer.json \
+            --image ghcr.io/${{ github.repository }}/devcontainer:main-latest \
             --remote-env ZHIPU_API_KEY="$ZHIPU_API_KEY" \
             --remote-env GITHUB_TOKEN="$GITHUB_TOKEN" \
             -- bash ./prompt.sh -f "$ORCHESTRATOR_PROMPT_PATH"

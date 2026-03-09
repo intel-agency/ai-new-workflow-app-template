@@ -35,3 +35,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
 RUN curl -fsSL https://opencode.ai/install | bash -s -- --version "${OPENCODE_VERSION}" --no-modify-path \
     && cp /root/.opencode/bin/opencode /usr/local/bin/opencode \
     && chmod +x /usr/local/bin/opencode
+
+# MCP servers (sequential-thinking + memory)
+RUN npm install -g @modelcontextprotocol/server-sequential-thinking \
+                   @modelcontextprotocol/server-memory
