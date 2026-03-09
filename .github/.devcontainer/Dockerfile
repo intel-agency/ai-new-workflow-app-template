@@ -43,5 +43,5 @@ RUN curl -fsSL https://opencode.ai/install | bash -s -- --version "${OPENCODE_VE
     && chmod +x /usr/local/bin/opencode
 
 # MCP servers (sequential-thinking + memory)
-RUN npm install -g @modelcontextprotocol/server-sequential-thinking \
-                   @modelcontextprotocol/server-memory
+RUN npm install -g @modelcontextprotocol/server-sequential-thinking@2025.12.18 \
+                   @modelcontextprotocol/server-memory@2026.1.26
