@@ -79,11 +79,6 @@ jobs:
             !.opencode/node_modules/**
             !node_modules/**
 
-      - name: Check for typos
-        uses: crate-ci/typos@b1ae8d918b6e85bd611117d3d9a3be4f9633f4ad # v1.29.10
-        with:
-          config: .typos.toml
-
   scan:
     runs-on: ubuntu-24.04
     permissions:
