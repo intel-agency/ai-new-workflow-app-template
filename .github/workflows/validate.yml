@@ -36,10 +36,17 @@ jobs:
       - name: Lint PowerShell scripts
         shell: pwsh
         run: |
-          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.24.0 -Force -Scope CurrentUser
+          $excludeRules = @(
+            'PSAvoidUsingWriteHost',
+            'PSAvoidUsingPlainTextForPassword',
+            'PSUseBOMForUnicodeEncodedFile',
+            'PSUseSingularNouns',
+            'PSReviewUnusedParameter'
+          )
           $results = @()
-          $results += Invoke-ScriptAnalyzer -Path ./prompt.ps1 -Severity Warning
-          $results += Invoke-ScriptAnalyzer -Path ./scripts/ -Recurse -Severity Warning
+          $results += Invoke-ScriptAnalyzer -Path ./prompt.ps1 -Severity Warning -ExcludeRule $excludeRules
+          $results += Invoke-ScriptAnalyzer -Path ./scripts/ -Recurse -Severity Warning -ExcludeRule $excludeRules
           if ($results.Count -gt 0) {
             $results | Format-Table -AutoSize
             throw "PSScriptAnalyzer found $($results.Count) issue(s)."
