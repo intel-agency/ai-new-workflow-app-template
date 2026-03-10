@@ -69,7 +69,7 @@ jobs:
 
       - name: Validate devcontainer.json
         run: |
-          npx --yes @devcontainers/cli validate --workspace-folder . || true
+          npx --yes @devcontainers/cli@0.84.0 validate --workspace-folder . || true
 
       - name: Lint Markdown files
         uses: DavidAnson/markdownlint-cli2-action@05f32210e84442804257b2a6f7f12e21bd7b35fc # v19.0.0
@@ -105,8 +105,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Verify jq is available
+        run: jq --version
 
       - name: Run prompt assembly tests
         run: bash test/test-prompt-assembly.sh
