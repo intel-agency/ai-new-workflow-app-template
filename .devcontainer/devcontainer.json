@@ -12,7 +12,6 @@
     "vscode": {
       "extensions": [
         "ms-dotnettools.csdevkit",
-        "ms-python.python",
         "oven.bun-vscode",
         "avaloniateam.vscode-avalonia"
       ]
