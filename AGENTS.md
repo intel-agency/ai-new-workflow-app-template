@@ -13,6 +13,41 @@ role: Orchestrator Agent
     </summary>
   </purpose>
 
+  <template_usage>
+    <summary>
+      This repository is a **GitHub template repo** (`intel-agency/ai-new-workflow-app-template`).
+      New project repositories are created from it using automation scripts in the
+      `nam20485/workflow-launch2` repo. The scripts clone this template, seed plan docs,
+      replace template placeholders, and push — producing a ready-to-go AI-orchestrated repo.
+    </summary>
+
+    <creation_workflow>
+      <step>1. Run `./scripts/create-repo-from-slug.ps1 -Slug &lt;project-slug&gt; -Yes` from the `workflow-launch2` repo.</step>
+      <step>2. That delegates to `./scripts/create-repo-with-plan-docs.ps1` which:
+        - Creates a new GitHub repo from this template via `gh repo create --template intel-agency/ai-new-workflow-app-template`
+        - Generates a random suffix for the repo name (e.g., `project-slug-bravo84`)
+        - Creates repo secrets (`GEMINI_API_KEY`) and variables (`VERSION_PREFIX`)
+        - Clones the new repo locally
+        - Copies plan docs from `./plan_docs/&lt;slug&gt;/` into the clone's `plan_docs/` directory
+        - Replaces all template placeholders (`ai-new-workflow-app-template` → new repo name, `intel-agency` → new owner)
+        - Commits and pushes the seeded repo
+      </step>
+      <step>3. On push, the clone's `validate` workflow runs CI (lint, scan, tests, devcontainer build).</step>
+    </creation_workflow>
+
+    <template_design_constraints>
+      <rule>Template placeholders (`ai-new-workflow-app-template`, `intel-agency`) in file contents and paths are replaced by the creation script. Keep them consistent.</rule>
+      <rule>The `validate` workflow must tolerate fresh clones where no prebuilt GHCR devcontainer image exists yet (fallback build from Dockerfile + image aliasing).</rule>
+      <rule>The `plan_docs/` directory contains external-generated documents seeded at clone time. Exclude it from strict linting (markdown lint, etc.).</rule>
+      <rule>The consumer `.devcontainer/devcontainer.json` references a prebuilt GHCR image. On fresh clones the image won't exist until `publish-docker` and `prebuild-devcontainer` workflows complete their first run.</rule>
+    </template_design_constraints>
+
+    <automation_scripts>
+      <entry><repo>nam20485/workflow-launch2</repo><path>scripts/create-repo-from-slug.ps1</path><description>Entry point — takes a slug, resolves plan docs dir, delegates to create-repo-with-plan-docs.ps1</description></entry>
+      <entry><repo>nam20485/workflow-launch2</repo><path>scripts/create-repo-with-plan-docs.ps1</path><description>Full pipeline: repo create, clone, seed docs, placeholder replace, commit, push</description></entry>
+    </automation_scripts>
+  </template_usage>
+
   <tech_stack>
     <item>opencode CLI — agent runtime (`opencode --model zai-coding-plan/glm-5 --agent Orchestrator`)</item>
     <item>ZhipuAI GLM models via `ZHIPU_API_KEY`</item>
