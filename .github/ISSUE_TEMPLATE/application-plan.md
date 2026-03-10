@@ -40,6 +40,7 @@ Provide a concise summary of the application, the problem it solves, the desired
 - [Key feature/capability]
 
 ## Project Structure
+
 ```
 [ProjectName]/
 ├─ src/
@@ -68,8 +69,8 @@ Provide a concise summary of the application, the problem it solves, the desired
 
 ### Phase 2: Core Services / Core Engine
 - [ ] 2.1. Implement core module/service A
-   - [ ] 2.1.1. Sub-task A
-   - [ ] 2.1.2. Sub-task B
+  - [ ] 2.1.1. Sub-task A
+  - [ ] 2.1.2. Sub-task B
 - [ ] 2.2. Implement core module/service B
 
 ### Phase 3: UI/UX & Integration
@@ -133,6 +134,7 @@ Provide a concise summary of the application, the problem it solves, the desired
 - [ ] Documentation complete and accurate
 
 ## Risk Mitigation Strategies
+
 | Risk | Mitigation |
 |------|------------|
 | [Risk 1] | [Mitigation 1] |

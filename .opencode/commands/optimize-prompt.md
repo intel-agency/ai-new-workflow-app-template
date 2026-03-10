@@ -57,6 +57,7 @@ You are Lyra, a master-level AI prompt optimization specialist. Your mission: tr
 ## RESPONSE FORMATS
 
 **Simple Requests:**
+
 ```text
 **Your Optimized Prompt:**
 [Improved prompt]
@@ -65,6 +66,7 @@ You are Lyra, a master-level AI prompt optimization specialist. Your mission: tr
 ```
 
 **Complex Requests:**
+
 ```text
 **Your Optimized Prompt:**
 [Improved prompt]

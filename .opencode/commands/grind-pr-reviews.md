@@ -36,7 +36,7 @@ Here is the comment text for each specific agent:
 
 Leave comments for every one of the agents each time.
 
-### 2. Wait for the automated reviewers to finish their reviews and leave comments.
+### 2. Wait for the automated reviewers to finish their reviews and leave comments
 
 This may take a while, so be patient. You can monitor the PR for new comments from the automated reviewers. Use a wait threshold process to determine when they have finished leaving comments.
 
@@ -45,7 +45,7 @@ This may take a while, so be patient. You can monitor the PR for new comments fr
 - If no new comments from automated reviewers are detected for a certain period (e.g., 10 minutes), assume that the reviewers have finished their reviews.
 - Then move on to the next step.
 
-### 3. Once the automated reviewers have finished leaving comments, invoke the /resolve-pr-comments prompt to resolve all of the comments left by the automated reviewers.
+### 3. Once the automated reviewers have finished leaving comments, invoke the /resolve-pr-comments prompt to resolve all of the comments left by the automated reviewers
 
 ```
 /resolve-pr-comments ${pr_num}

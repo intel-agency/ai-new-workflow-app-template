@@ -83,4 +83,4 @@ Link to syntax of the event data: <https://docs.github.com/en/webhooks-and-event
 
 ---
 
-__EVENT_DATA__
+**EVENT_DATA**

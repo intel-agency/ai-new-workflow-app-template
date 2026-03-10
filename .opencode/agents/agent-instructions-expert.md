@@ -27,6 +27,7 @@ Delegate to the Agent Instructions Expert subagent with:
 ### Example Prompts
 
 **Retrieve:**
+
 ```
 query: "What is the preferred .NET version and SDK pinning strategy?"
 mode: "retrieve"
@@ -34,6 +35,7 @@ context: "Setting up a new ASP.NET Core project"
 ```
 
 **Insert:**
+
 ```
 query: "Add guidance for using MediatR with CQRS pattern"
 mode: "insert"
@@ -47,6 +49,7 @@ context: "Expanding application development patterns"
 ## Knowledge Map
 
 ### Repository Location
+
 | Item | URL |
 |------|-----|
 | **Canonical Repo** | `https://github.com/nam20485/agent-instructions` |
@@ -54,6 +57,7 @@ context: "Expanding application development patterns"
 | **Raw Content Base** | `https://raw.githubusercontent.com/nam20485/agent-instructions/{branch}/` |
 
 ### Core Instruction Modules
+
 | Topic | File | Use When |
 |-------|------|----------|
 | Core behaviors & hierarchy | `ai_instruction_modules/ai-core-instructions.md` | General agent behavior, constraints, change flow |
@@ -66,6 +70,7 @@ context: "Expanding application development patterns"
 | Consolonia (TUI) | `ai_instruction_modules/ai-consolonia-instructions.md` | Avalonia-based console apps |
 
 ### Dynamic Workflows & Assignments
+
 | Topic | File | Use When |
 |-------|------|----------|
 | Workflow development | `ai_instruction_modules/ai-workflow-development-guide.md` | Creating/modifying workflows |
@@ -109,6 +114,7 @@ context: "Expanding application development patterns"
 - Ask **at most 1 clarifying question**, and only if the query cannot be answered safely without it.
 
 **Response Format:**
+
 ```
 ## [Topic]
 [Concise answer with only the info needed]
@@ -126,6 +132,7 @@ context: "Expanding application development patterns"
 5. **Apply (via delegator)** – Upon confirmation, return a ready-to-apply patch/diff; the orchestrator/delegator applies it via the repo’s approved change flow (typically a PR).
 
 **Location Decision Matrix:**
+
 | Content Type | Target File |
 |--------------|-------------|
 | Framework/library guidance | `ai_instruction_modules/ai-application-guidelines.md` |
@@ -180,6 +187,7 @@ To fetch raw content from the canonical repo (using the configured `{branch}`):
 ### Example 1: Tech Stack Query
 
 **Prompt:**
+
 ```
 query: "What database and ORM should I use?"
 mode: "retrieve"
@@ -187,6 +195,7 @@ context: "Starting a new data-driven application"
 ```
 
 **Response:**
+
 ```
 ## Database & ORM
 
@@ -203,6 +212,7 @@ context: "Starting a new data-driven application"
 ### Example 2: Workflow Location Query
 
 **Prompt:**
+
 ```
 query: "Where do I find the create-application workflow steps?"
 mode: "retrieve"
@@ -210,6 +220,7 @@ context: "Need to follow the app creation workflow"
 ```
 
 **Response:**
+
 ```
 ## Workflow Location
 
@@ -224,6 +235,7 @@ context: "Need to follow the app creation workflow"
 ### Example 3: Insert New Guidance
 
 **Prompt:**
+
 ```
 query: "Add guidance for using FluentValidation"
 mode: "insert"
@@ -232,6 +244,7 @@ context: "Expanding ASP.NET validation guidance"
 ```
 
 **Response:**
+
 ```
 ## Proposed Insert
 

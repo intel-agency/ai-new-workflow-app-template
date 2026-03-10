@@ -19,7 +19,7 @@ Translate your `.source/agents/` and `.source/prompts/` structure into Traycer's
 
 2. **Create Traycer templates** in `.traycer/templates/` with `applicableFor: plan` or `generic` to inject your agent delegation patterns into Traycer's plan handoff:
    - Template wrapping `{{planMarkdown}}` with references to `@orchestrator`, `@researcher` delegation conventions
-   - Preserve instruction links to agent-instructions repo (https://github.com/nam20485/agent-instructions)
+   - Preserve instruction links to agent-instructions repo (<https://github.com/nam20485/agent-instructions>)
 
 3. **Generate CLI agent wrappers** in `.traycer/cli-agents/` for specialized agent invocations:
    - Example: `orchestrator.sh` / `orchestrator.ps1` that passes `$TRAYCER_PROMPT` with orchestrator-specific flags

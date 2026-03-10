@@ -3,7 +3,7 @@ description: Orchestrate project setup via dynamic workflow
 ---
 
 /orchestrate-dynamic-workflow
-  - $workflow_name = `project-setup`,
+- $workflow_name = `project-setup`,
 
 <!--
 copilot-source:

@@ -105,14 +105,14 @@ Each assignment MUST be delegated to specialized agents **-OR-** broken down by 
 
 For each `$assignment_name` in `$assignments`, you will:
 
-1.  **ANALYZE**: assignment requirements and identify required agent types
-2.  **DELEGATE**: to appropriate specialist agent(s) using Task tool
-3.  **COORDINATE**: between multiple agents if required
-4.  **MONITOR**: delegated work progress and provide guidance
-5.  **REVIEW**: delegated work and approve/request changes
-6.  **VERIFY**: all acceptance criteria are met
-7.  **RECORD**: output as `#workflow.$assignment_name`
-8.  **REPORT**: delegation compliance metrics
+1. **ANALYZE**: assignment requirements and identify required agent types
+2. **DELEGATE**: to appropriate specialist agent(s) using Task tool
+3. **COORDINATE**: between multiple agents if required
+4. **MONITOR**: delegated work progress and provide guidance
+5. **REVIEW**: delegated work and approve/request changes
+6. **VERIFY**: all acceptance criteria are met
+7. **RECORD**: output as `#workflow.$assignment_name`
+8. **REPORT**: delegation compliance metrics
 
 ## Enforcement Mechanisms
 
@@ -149,9 +149,9 @@ Target Threshold: ≥90%
 
 Add to existing acceptance criteria:
 
-8. **Delegation Coverage**: Minimum 75% of tasks delegated to specialist agents
-9. **Agent Utilization**: At least 2 different agent types used per assignment
-10. **Coordination Quality**: Evidence of successful agent coordination and integration
+1. **Delegation Coverage**: Minimum 75% of tasks delegated to specialist agents
+2. **Agent Utilization**: At least 2 different agent types used per assignment
+3. **Coordination Quality**: Evidence of successful agent coordination and integration
 
 ### Enhanced Run Report Schema
 
