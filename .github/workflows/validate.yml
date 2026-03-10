@@ -31,11 +31,73 @@ jobs:
       - name: Lint shell scripts
         run: |
           sudo apt-get update && sudo apt-get install -y shellcheck
-          shellcheck --severity=warning test/*.sh
+          shellcheck --severity=warning test/*.sh prompt.sh
+
+      - name: Lint PowerShell scripts
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          $results = @()
+          $results += Invoke-ScriptAnalyzer -Path ./prompt.ps1 -Severity Warning
+          $results += Invoke-ScriptAnalyzer -Path ./scripts/ -Recurse -Severity Warning
+          if ($results.Count -gt 0) {
+            $results | Format-Table -AutoSize
+            throw "PSScriptAnalyzer found $($results.Count) issue(s)."
+          }
+
+      - name: Validate JSON files
+        run: |
+          errors=0
+          for f in \
+            .devcontainer/devcontainer.json \
+            .github/.devcontainer/devcontainer.json \
+            .github/.labels.json \
+            .opencode/opencode.json \
+            .vscode/settings.json \
+            global.json \
+            opencode.json \
+            test/fixtures/*.json; do
+            if ! jq empty "$f" 2>&1; then
+              echo "::error file=$f::Invalid JSON"
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "Found $errors JSON validation error(s)."
+            exit 1
+          fi
 
       - name: Validate devcontainer.json
         run: |
           npx --yes @devcontainers/cli validate --workspace-folder . || true
+
+      - name: Lint Markdown files
+        uses: DavidAnson/markdownlint-cli2-action@05f32210e84442804257b2a6f7f12e21bd7b35fc # v19.0.0
+        with:
+          globs: |
+            **/*.md
+            !.opencode/node_modules/**
+            !node_modules/**
+
+      - name: Check for typos
+        uses: crate-ci/typos@b1ae8d918b6e85bd611117d3d9a3be4f9633f4ad # v1.29.10
+        with:
+          config: .typos.toml
+
+  scan:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.8
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
   test-prompt-assembly:
     runs-on: ubuntu-24.04
