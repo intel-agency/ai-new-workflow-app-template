@@ -24,7 +24,7 @@ ENV DOTNET_ROOT=/usr/share/dotnet
 ENV PATH="${PATH}:${DOTNET_ROOT}:${DOTNET_ROOT}/tools"
 
 # Avalonia templates
-RUN dotnet new install Avalonia.Templates::11.2.0
+RUN dotnet new install Avalonia.Templates::11.3.12
 
 # Bun
 ENV BUN_INSTALL=/usr/local/bun

@@ -7,257 +7,171 @@ role: Orchestrator Agent
 <instructions>
   <purpose>
     <summary>
-      This repo is a GitHub Actions-based AI orchestration system. When GitHub events fire
-      (issues, PR comments, PR reviews, etc.), the `orchestrator-agent` workflow:
-      1. Assembles a structured prompt from a template + the event JSON payload.
-      2. Spins up a devcontainer with the full toolchain pre-installed.
-      3. Runs `opencode --agent Orchestrator` inside the container, which reads the prompt
-         and delegates work to specialized sub-agents defined in `.opencode/agents/`.
+      GitHub Actions-based AI orchestration system. On GitHub events (issues, PR comments, reviews),
+      the `orchestrator-agent` workflow assembles a structured prompt, spins up a devcontainer,
+      and runs `opencode --agent Orchestrator` to delegate work to specialist sub-agents in `.opencode/agents/`.
     </summary>
-    <guidance>
-      Use this file as the default operating guide for coding agents working in this repo.
-    </guidance>
   </purpose>
 
   <tech_stack>
-    <item>opencode CLI — primary agent runtime (`opencode --model zai-coding-plan/glm-5 --agent Orchestrator`)</item>
+    <item>opencode CLI — agent runtime (`opencode --model zai-coding-plan/glm-5 --agent Orchestrator`)</item>
     <item>ZhipuAI GLM models via `ZHIPU_API_KEY`</item>
-    <item>GitHub Actions — workflow trigger and runner</item>
-    <item>devcontainers/ci — executes opencode inside a reproducible container</item>
-    <item>.NET SDK 10 + Aspire workload + Avalonia templates (installed in devcontainer)</item>
-    <item>Bun — JS runtime (installed in devcontainer)</item>
-    <item>uv — Python package manager (installed in devcontainer)</item>
+    <item>GitHub Actions + devcontainers/ci — workflow trigger, runner, reproducible container</item>
+    <item>.NET SDK 10 + Aspire + Avalonia templates, Bun, uv (all in devcontainer)</item>
     <item>MCP servers: `@modelcontextprotocol/server-sequential-thinking`, `@modelcontextprotocol/server-memory`</item>
   </tech_stack>
 
   <repository_map>
-    <entry>
-      <path>.github/workflows/orchestrator-agent.yml</path>
-      <description>Primary workflow — assembles prompt, logs into GHCR, runs opencode in devcontainer</description>
-    </entry>
-    <entry>
-      <path>.github/workflows/prompts/orchestrator-agent-prompt.md</path>
-      <description>Prompt template with `__EVENT_DATA__` placeholder replaced at runtime with structured event context + raw JSON</description>
-    </entry>
-    <entry>
-      <path>.opencode/agents/orchestrator.md</path>
-      <description>Orchestrator agent definition — coordinates all specialist agents, never writes code directly</description>
-    </entry>
-    <entry>
-      <path>.opencode/agents/</path>
-      <description>All specialist agent definitions (developer, code-reviewer, planner, devops-engineer, github-expert, etc.)</description>
-    </entry>
-    <entry>
-      <path>.opencode/commands/</path>
-      <description>Reusable command prompts (e.g., `orchestrate-new-project.md`, `grind-pr-reviews.md`, `fix-failing-workflows.md`)</description>
-    </entry>
-    <entry>
-      <path>.opencode/opencode.json</path>
-      <description>opencode config — MCP server definitions (sequential-thinking, memory)</description>
-    </entry>
-    <entry>
-      <path>.github/.devcontainer/Dockerfile</path>
-      <description>Devcontainer image — installs .NET SDK, Bun, uv, and opencode CLI (build context for publish-docker workflow)</description>
-    </entry>
-    <entry>
-      <path>.github/.devcontainer/devcontainer.json</path>
-      <description>Build-time devcontainer config — references Dockerfile and includes Features (node, python, gh CLI)</description>
-    </entry>
-    <entry>
-      <path>.devcontainer/devcontainer.json</path>
-      <description>Consumer devcontainer config — pulls prebuilt image from GHCR, no local build required</description>
-    </entry>
-    <entry>
-      <path>.github/workflows/publish-docker.yml</path>
-      <description>Builds raw Dockerfile and pushes to GHCR with main-latest and main-&lt;run_number&gt; tags</description>
-    </entry>
-    <entry>
-      <path>.github/workflows/prebuild-devcontainer.yml</path>
-      <description>Layers devcontainer Features on the published Docker image, triggered by workflow_run after Publish Docker</description>
-    </entry>
-    <entry>
-      <path>test/</path>
-      <description>Shell-based tests: devcontainer build, tool availability, and prompt assembly validation</description>
-    </entry>
-    <entry>
-      <path>test/fixtures/</path>
-      <description>Sample GitHub webhook payloads for local testing (issues, PRs, comments, reviews)</description>
-    </entry>
+    <!-- Workflows -->
+    <entry><path>.github/workflows/orchestrator-agent.yml</path><description>Primary workflow — assembles prompt, logs into GHCR, runs opencode in devcontainer</description></entry>
+    <entry><path>.github/workflows/prompts/orchestrator-agent-prompt.md</path><description>Prompt template with `__EVENT_DATA__` placeholder (sed-substituted at runtime)</description></entry>
+    <entry><path>.github/workflows/publish-docker.yml</path><description>Builds Dockerfile, pushes to GHCR with main-latest and main-&lt;run_number&gt; tags</description></entry>
+    <entry><path>.github/workflows/prebuild-devcontainer.yml</path><description>Layers devcontainer Features on published Docker image (triggered by workflow_run)</description></entry>
+    <!-- Agent definitions -->
+    <entry><path>.opencode/agents/orchestrator.md</path><description>Orchestrator — coordinates specialists, never writes code directly</description></entry>
+    <entry><path>.opencode/agents/</path><description>All specialist agents (developer, code-reviewer, planner, devops-engineer, github-expert, etc.)</description></entry>
+    <entry><path>.opencode/commands/</path><description>Reusable command prompts (orchestrate-new-project, grind-pr-reviews, fix-failing-workflows, etc.)</description></entry>
+    <entry><path>.opencode/opencode.json</path><description>opencode config — MCP server definitions</description></entry>
+    <!-- Devcontainer -->
+    <entry><path>.github/.devcontainer/Dockerfile</path><description>Devcontainer image — .NET SDK, Bun, uv, opencode CLI (build context for publish-docker)</description></entry>
+    <entry><path>.github/.devcontainer/devcontainer.json</path><description>Build-time devcontainer config (Dockerfile + Features: node, python, gh CLI)</description></entry>
+    <entry><path>.devcontainer/devcontainer.json</path><description>Consumer devcontainer — pulls prebuilt GHCR image, no local build</description></entry>
+    <!-- Tests -->
+    <entry><path>test/</path><description>Shell-based tests: devcontainer build, tool availability, prompt assembly</description></entry>
+    <entry><path>test/fixtures/</path><description>Sample webhook payloads for local testing</description></entry>
+    <!-- Remote instructions -->
+    <entry><path>local_ai_instruction_modules/</path><description>Local instruction modules (development rules, workflows, delegation, terminal commands)</description></entry>
   </repository_map>
 
+  <instruction_source>
+    <repository>
+      <name>nam20485/agent-instructions</name>
+      <branch>main</branch>
+    </repository>
+    <guidance>
+      Remote instructions are the single source of truth. Fetch from raw URLs:
+      replace `github.com/` with `raw.githubusercontent.com/` and remove `blob/`.
+      Core instructions: `https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-core-instructions.md`
+    </guidance>
+    <modules>
+      <module type="core" required="true" link="https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-core-instructions.md">Core Instructions</module>
+      <module type="local" required="true" path="local_ai_instruction_modules">Local AI Instructions</module>
+      <module type="local" required="true" path="local_ai_instruction_modules/ai-dynamic-workflows.md">Dynamic Workflow Orchestration</module>
+      <module type="local" required="true" path="local_ai_instruction_modules/ai-workflow-assignments.md">Workflow Assignments</module>
+      <module type="local" required="true" path="local_ai_instruction_modules/ai-development-instructions.md">Development Instructions</module>
+      <module type="optional" path="local_ai_instruction_modules/ai-terminal-commands.md">Terminal Commands</module>
+    </modules>
+  </instruction_source>
+
   <environment_setup>
-    <step order="1">
-      <title>Required secrets (GitHub Actions)</title>
-      <instruction>`ZHIPU_API_KEY` — ZhipuAI model access; set in repo Settings → Secrets.</instruction>
-      <instruction>`GITHUB_TOKEN` — provided automatically by Actions; no manual setup needed.</instruction>
-    </step>
-    <step order="2">
-      <title>Devcontainer image cache</title>
-      <instruction>Image is cached at `ghcr.io/${{ github.repository }}/devcontainer`. `publish-docker.yml` builds the raw Dockerfile; `prebuild-devcontainer.yml` layers Features on top.</instruction>
-      <instruction>Login uses `GITHUB_TOKEN` via `docker/login-action` targeting `ghcr.io`.</instruction>
-      <instruction>Set repo variable `VERSION_PREFIX` (e.g., `1.0`) for versioned image tags (`main-1.0.&lt;run_number&gt;`).</instruction>
-    </step>
+    <secrets>
+      <item>`ZHIPU_API_KEY` — ZhipuAI model access; set in repo Settings → Secrets.</item>
+      <item>`GITHUB_TOKEN` — provided automatically by Actions.</item>
+    </secrets>
+    <devcontainer_cache>
+      Image at `ghcr.io/${{ github.repository }}/devcontainer`. `publish-docker.yml` builds the raw Dockerfile;
+      `prebuild-devcontainer.yml` layers Features. Login via `docker/login-action` with `GITHUB_TOKEN`.
+      Set repo variable `VERSION_PREFIX` (e.g., `1.0`) for versioned tags.
+    </devcontainer_cache>
   </environment_setup>
 
-  <runbook>
-    <run>
-      <name>Trigger the workflow</name>
-      <note>Open or comment on an issue, open/push to a PR, or submit a review. The `orchestrator-agent` workflow fires automatically.</note>
-    </run>
-    <run>
-      <name>Test devcontainer build</name>
-      <command>`bash test/test-devcontainer-build.sh`</command>
-    </run>
-    <run>
-      <name>Test tool availability inside devcontainer</name>
-      <command>`bash test/test-devcontainer-tools.sh`</command>
-    </run>
-    <run>
-      <name>Test prompt assembly</name>
-      <command>`bash test/test-prompt-assembly.sh`</command>
-    </run>
-  </runbook>
-
-  <testing_guidance>
-    <guidance>Tests are shell scripts in `test/`. Run them directly with `bash`.</guidance>
+  <testing>
+    <guidance>Tests are shell scripts in `test/`. Run directly with `bash`.</guidance>
     <commands>
-      <command>Run all tests: `bash test/test-devcontainer-build.sh && bash test/test-devcontainer-tools.sh && bash test/test-prompt-assembly.sh`</command>
-      <command>Prompt assembly test uses fixtures from `test/fixtures/` — add new fixture payloads there when testing new event types.</command>
+      <command>All tests: `bash test/test-devcontainer-build.sh && bash test/test-devcontainer-tools.sh && bash test/test-prompt-assembly.sh`</command>
+      <command>Prompt changes: `bash test/test-prompt-assembly.sh`</command>
+      <command>Dockerfile changes: `bash test/test-devcontainer-tools.sh`</command>
     </commands>
-  </testing_guidance>
+    <guidance>Add new fixture payloads to `test/fixtures/` when testing new event types.</guidance>
+  </testing>
 
   <coding_conventions>
-    <rule>Keep changes minimal and targeted to the requested behavior.</rule>
-    <rule>Avoid broad refactors unless the task explicitly requires them.</rule>
+    <rule>Keep changes minimal and targeted.</rule>
     <rule>Do not hardcode secrets/tokens.</rule>
-    <rule>When editing `.github/workflows/prompts/orchestrator-agent-prompt.md`, preserve the `__EVENT_DATA__` placeholder — the workflow relies on it for sed substitution.</rule>
-    <rule>When editing `.opencode/agents/orchestrator.md`, keep the delegation-depth limit (≤2) and the "never write code directly" constraint intact.</rule>
-    <rule>Pin action versions by SHA in workflow files (already enforced for `actions/checkout` and `docker/login-action`).</rule>
+    <rule>Preserve the `__EVENT_DATA__` placeholder in `orchestrator-agent-prompt.md`.</rule>
+    <rule>Keep orchestrator delegation-depth ≤2 and "never write code directly" constraint.</rule>
+    <rule>Pin action versions by SHA in workflow files.</rule>
+    <rule>Never add duplicate top-level `name:`, `on:`, or `jobs:` keys in workflow YAML.</rule>
+    <rule>`.opencode/` is checked out by `actions/checkout`; do not COPY it in the Dockerfile.</rule>
+    <rule>Dockerfile lives at `.github/.devcontainer/Dockerfile`. Consumer devcontainer uses `"image:"` — no local build.</rule>
   </coding_conventions>
 
   <agent_specific_guardrails>
-    <rule>The Orchestrator agent must never write code directly — it delegates to specialist agents via the `task` tool.</rule>
+    <rule>The Orchestrator agent delegates to specialists via the `task` tool — never writes code directly.</rule>
     <rule>Prompt assembly pipeline:
       1. Read template from `.github/workflows/prompts/orchestrator-agent-prompt.md`.
       2. Prepend structured event context (event name, action, actor, repo, ref, SHA).
       3. Append raw event JSON from `${{ toJson(github.event) }}`.
-      4. Write assembled prompt to `.assembled-orchestrator-prompt.md` and export path via `GITHUB_ENV`.
+      4. Write to `.assembled-orchestrator-prompt.md` and export path via `GITHUB_ENV`.
     </rule>
-    <rule>Do not add a second top-level `name:`, `on:`, or `jobs:` block to any single workflow YAML file — duplicate keys silently overwrite and drop triggers.</rule>
-    <rule>`.opencode/` is checked out by `actions/checkout`; do not COPY it separately in the Dockerfile.</rule>
-    <rule>The Dockerfile lives at `.github/.devcontainer/Dockerfile`. The consumer `.devcontainer/devcontainer.json` uses `"image:"` — it does not build locally.</rule>
   </agent_specific_guardrails>
 
+  <agent_readiness>
+    <verification_protocol>
+      For any non-trivial change (logic, behavior, refactors, dependency updates, config changes, multi-file edits):
+      run verification, fix all failures, re-run until clean. Do not skip or suppress errors.
+    </verification_protocol>
+
+    <verification_commands>
+      <!--
+        | Check                  | Command                                              | When to run              |
+        |========================|======================================================|==========================|
+        | Build + Roslyn analysis| dotnet build {SolutionName}.sln -warnaserror          | Every task               |
+        | Code style (C#)        | dotnet format {SolutionName}.sln --verify-no-changes  | Every task               |
+        | Unit tests             | dotnet test {SolutionName}.sln --no-build             | Every task               |
+        | Polyglot lint          | trunk check                                           | Every task               |
+        | Security scan          | trunk check --all --filter=trufflehog,osv-scanner,... | When explicitly required |
+        | Shell tests            | bash test/test-prompt-assembly.sh                     | Prompt/workflow changes  |
+        | Devcontainer tests     | bash test/test-devcontainer-tools.sh                  | Dockerfile changes       |
+        | Workflow structure     | grep -c "^name:" .github/workflows/*.yml (expect 1)   | Workflow changes         |
+      -->
+      <rule>When adding a CI workflow, add its equivalent local command to this table.</rule>
+    </verification_commands>
+
+    <post_commit_monitoring>
+      After push, monitor CI until green: `gh run list --limit 5`, `gh run watch <id>`, `gh run view <id> --log-failed`.
+      If any workflow fails, stop feature work, triage, fix, re-verify, push. Do not mark work complete while CI is failing.
+    </post_commit_monitoring>
+
+    <pipeline_speed_policy>
+      <lane name="fast_readiness" blocking="true">Build, lint/format, unit tests — keep fast for merge readiness.</lane>
+      <lane name="extended_validation" blocking="false">Integration suites, security scans, dependency audits.</lane>
+      <rule>Protect the fast lane from slow steps.</rule>
+    </pipeline_speed_policy>
+  </agent_readiness>
+
   <validation_before_handoff>
-    <step order="1">Run shell tests: `bash test/test-prompt-assembly.sh` for prompt changes; `bash test/test-devcontainer-tools.sh` for Dockerfile changes.</step>
-    <step order="2">
-      Validate workflow YAML has exactly one top-level `name:`, `on:`, and `jobs:` key:
-      `grep -c "^name:" .github/workflows/orchestrator-agent.yml  # expect 1`
-    </step>
-    <step order="3">
-      Summarize:
-      - What changed
-      - What was validated
-      - Any remaining risk (especially secret-dependent paths or devcontainer image cache misses)
-    </step>
+    <step>Run applicable shell tests and verification commands.</step>
+    <step>Validate workflow YAML: `grep -c "^name:" .github/workflows/orchestrator-agent.yml  # expect 1`</step>
+    <step>Summarize: what changed, what was validated, remaining risks (secret-dependent paths, image cache misses).</step>
   </validation_before_handoff>
 
   <tool_use_instructions>
     <instruction id="querying_microsoft_documentation">
       <applyTo>**</applyTo>
       <title>Querying Microsoft Documentation</title>
-      <tools>
-        <tool>microsoft_docs_search</tool>
-        <tool>microsoft_docs_fetch</tool>
-        <tool>microsoft_code_sample_search</tool>
-      </tools>
+      <tools><tool>microsoft_docs_search</tool><tool>microsoft_docs_fetch</tool><tool>microsoft_code_sample_search</tool></tools>
       <guidance>
-        These MCP tools can search and fetch Microsoft's latest official documentation and code samples, which may be newer or more detailed than model training data.
-      </guidance>
-      <guidance>
-        For specific and narrowly defined questions involving native Microsoft technologies (C#, F#, ASP.NET Core, Microsoft.Extensions, NuGet, Entity Framework, and the dotnet runtime), use these tools for research.
-        When writing code, prioritize using information retrieved from these tools to ensure accuracy and up-to-date practices, especially for newer features or libraries.
-        Before writing any code involving Microsoft technologies, always check for relevant documentation or code samples using these tools to ensure the most current and accurate information is being used.
+        Use these MCP tools for Microsoft technologies (C#, ASP.NET Core, .NET, EF, NuGet).
+        Prioritize retrieved info over training data for newer features.
       </guidance>
     </instruction>
-
     <instruction id="sequential_thinking_default_usage">
       <applyTo>*</applyTo>
-      <title>Sequential Thinking for Complex Problem Solving</title>
-      <tools>
-        <tool>sequential_thinking</tool>
-      </tools>
+      <title>Sequential Thinking</title>
+      <tools><tool>sequential_thinking</tool></tools>
       <guidance>
-        Use sequential thinking for all requests except the most trivial, single-step requests (for example, minimal formatting changes or direct one-line lookups).
-      </guidance>
-      <guidance>
-        The sequential_thinking tool enables structured, step-by-step problem analysis with the ability to revise, branch, and adjust reasoning paths dynamically.
-        Use this tool when:
-        - Breaking down complex problems into manageable steps
-        - Planning and design work that may require revision
-        - Analyzing situations where the full scope is unclear initially
-        - Conducting analysis that might need course correction
-        - Making architectural or design decisions
-        - Encountering unexpected issues or errors that require systematic debugging
-        - Filtering out irrelevant information while maintaining context
-        - Working through tasks that need to maintain context over multiple steps
-      </guidance>
-      <guidance>
-        The tool supports dynamic thinking processes by allowing you to:
-        - Revise previous thoughts when new understanding emerges
-        - Branch into alternative reasoning paths
-        - Adjust the estimated total number of thoughts as complexity becomes apparent
-        - Mark when additional thinking steps are needed beyond original estimates
+        Use for all non-trivial requests. Enables step-by-step analysis with revision, branching, and dynamic adjustment.
+        Use when: breaking down complex problems, planning, architectural decisions, debugging, multi-step context.
       </guidance>
     </instruction>
-
     <instruction id="memory_default_usage">
       <applyTo>*</applyTo>
-      <title>Knowledge Graph Memory for Context Persistence</title>
-      <tools>
-        <tool>create_entities</tool>
-        <tool>create_relations</tool>
-        <tool>add_observations</tool>
-        <tool>delete_entities</tool>
-        <tool>delete_observations</tool>
-        <tool>delete_relations</tool>
-        <tool>read_graph</tool>
-        <tool>search_nodes</tool>
-        <tool>open_nodes</tool>
-      </tools>
+      <title>Knowledge Graph Memory</title>
+      <tools><tool>create_entities</tool><tool>create_relations</tool><tool>add_observations</tool><tool>delete_entities</tool><tool>delete_observations</tool><tool>delete_relations</tool><tool>read_graph</tool><tool>search_nodes</tool><tool>open_nodes</tool></tools>
       <guidance>
-        Use memory for all requests except the most trivial, single-step requests, and persist relevant user/project context when it helps future task continuity.
-      </guidance>
-      <guidance>
-        The memory MCP server provides a persistent knowledge graph for storing and retrieving context across conversations.
-        Store information about:
-        - User preferences, communication styles, and working patterns
-        - Project-specific configurations, patterns, and conventions
-        - Technical decisions, rationale, and architectural choices
-        - Recurring challenges, solutions, and workarounds discovered
-        - Team members, their roles, and areas of expertise
-        - Tool configurations, CLI paths, authentication mechanisms
-        - Build patterns, deployment strategies, and environment setups
-      </guidance>
-      <guidance>
-        Knowledge graph concepts:
-        - **Entities**: Primary nodes with a name, type (e.g., "person", "project", "tool"), and observations
-        - **Relations**: Directed connections between entities in active voice (e.g., "works_at", "depends_on", "configures")
-        - **Observations**: Atomic facts stored as strings attached to entities (one fact per observation)
-      </guidance>
-      <guidance>
-        Tool usage patterns:
-        - Use create_entities to establish new concepts, people, projects, or tools
-        - Use create_relations to connect related entities and build context
-        - Use add_observations to record facts, preferences, or discoveries about entities
-        - Use search_nodes to find relevant context based on keywords across names, types, and observations
-        - Use open_nodes to retrieve specific entities by name for detailed information
-        - Use read_graph to get a complete view of all stored knowledge when planning or reviewing
-        - Use delete operations to clean up outdated or incorrect information
-      </guidance>
-      <guidance>
-        At the start of complex tasks, search or read relevant memory to leverage previous learnings.
-        After completing significant work, update memory with new patterns, configurations, or insights discovered.
+        Use for non-trivial requests. Persist user/project context (preferences, configs, decisions, challenges, solutions).
+        Entities have names, types, and observations. Relations connect entities. Search/read at task start; update after significant work.
       </guidance>
     </instruction>
   </tool_use_instructions>
