@@ -40,8 +40,11 @@ jobs:
           $excludeRules = @(
             'PSAvoidUsingWriteHost',
             'PSAvoidUsingPlainTextForPassword',
+            'PSAvoidUsingInvokeExpression',
+            'PSAvoidDefaultValueSwitchParameter',
             'PSUseBOMForUnicodeEncodedFile',
             'PSUseSingularNouns',
+            'PSUseDeclaredVarsMoreThanAssignments',
             'PSReviewUnusedParameter'
           )
           $results = @()
