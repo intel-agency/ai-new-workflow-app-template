@@ -1,7 +1,7 @@
 ---
+file: AGENTS.md
 description: Project instructions for coding agents
 scope: repository
-role: Orchestrator Agent
 ---
 
 <instructions>
