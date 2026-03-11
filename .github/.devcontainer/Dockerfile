@@ -39,7 +39,8 @@ RUN curl -LsSf https://astral.sh/uv/0.10.9/install.sh | sh \
     && chmod +x /usr/local/bin/uv /usr/local/bin/uvx
 
 # GitHub CLI
-RUN mkdir -p -m 755 /etc/apt/keyrings \
+RUN mkdir -p /etc/apt/keyrings \
+    && chmod 755 /etc/apt/keyrings \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
        -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
     && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
