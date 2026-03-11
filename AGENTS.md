@@ -211,4 +211,45 @@ role: Orchestrator Agent
       </guidance>
     </instruction>
   </tool_use_instructions>
+
+  <available_tools>
+    <summary>
+      Tools available inside the devcontainer at runtime. Installed via
+      `.github/.devcontainer/Dockerfile` unless noted otherwise.
+    </summary>
+
+    <runtimes_and_package_managers>
+      <tool name="dotnet" version="10.0.102">`.NET SDK` — build, test, publish C#/F# projects. Includes Avalonia Templates 11.3.12.</tool>
+      <tool name="node" version="24.14.0 LTS">`Node.js` — JavaScript runtime. Required for MCP server packages (`npx`).</tool>
+      <tool name="npm">`npm` — Node package manager (bundled with Node.js).</tool>
+      <tool name="bun" version="1.3.10">`Bun` — fast JavaScript/TypeScript runtime, bundler, and package manager.</tool>
+      <tool name="uv" version="0.10.9">`uv` — Astral Python package manager. Also provides `uvx` for ephemeral tool runs.</tool>
+    </runtimes_and_package_managers>
+
+    <cli_tools>
+      <tool name="gh">`GitHub CLI` — interact with GitHub API (issues, PRs, repos, releases, actions). Authenticated automatically via `GITHUB_TOKEN` env var in CI; use `gh auth login --with-token` otherwise.</tool>
+      <tool name="opencode" version="1.2.24">`opencode CLI` — AI agent runtime. Runs agents defined in `.opencode/agents/` with MCP server support.</tool>
+      <tool name="git">`Git` — version control (system package + devcontainer feature).</tool>
+    </cli_tools>
+
+    <github_authentication>
+      <summary>
+        GitHub API access is configured at multiple layers to support both `gh` CLI and MCP GitHub server operations.
+      </summary>
+      <layer name="GITHUB_TOKEN">Provided automatically by GitHub Actions. Passed into the devcontainer via `--remote-env`.</layer>
+      <layer name="GITHUB_PERSONAL_ACCESS_TOKEN">Bridged from `GITHUB_TOKEN` for the `@modelcontextprotocol/server-github` MCP server, which requires this specific env var name. Set in `opencode.json` via the MCP `env` block, in `devcontainer.json` `remoteEnv`, and exported in `prompt.sh`.</layer>
+      <layer name="gh auth login">`prompt.sh` authenticates the `gh` CLI via `echo "$GITHUB_TOKEN" | gh auth login --with-token` before launching opencode.</layer>
+    </github_authentication>
+
+    <scripts_directory>
+      <summary>PowerShell helper scripts in `scripts/` for GitHub setup and management tasks.</summary>
+      <script name="scripts/common-auth.ps1">Shared `Initialize-GitHubAuth` function — checks `gh auth status`, authenticates via PAT token (`$env:GITHUB_AUTH_TOKEN`) or interactive login.</script>
+      <script name="scripts/gh-auth.ps1">Extended GitHub auth helper — supports PAT token auth via `--with-token` and interactive fallback.</script>
+      <script name="scripts/import-labels.ps1">Imports labels from `.github/.labels.json` into the repository.</script>
+      <script name="scripts/create-milestones.ps1">Creates project milestones from plan docs.</script>
+      <script name="scripts/test-github-permissions.ps1">Verifies `GITHUB_TOKEN` has required permissions (contents, issues, PRs, packages).</script>
+      <script name="scripts/query.ps1">GraphQL query helper for GitHub API.</script>
+      <script name="scripts/update-remote-indices.ps1">Updates remote instruction module indices.</script>
+    </scripts_directory>
+  </available_tools>
 </instructions>
