@@ -21,6 +21,10 @@ scope: repository
       replace template placeholders, and push — producing a ready-to-go AI-orchestrated repo.
     </summary>
 
+    <template-clone-instances>
+      Once the template has been cloned into a new instance, this file must be updated to match the new repo's specifics (e.g., name, links, instructions).
+    </template-clone-instances>
+
     <creation_workflow>
       <step>1. Run `./scripts/create-repo-from-slug.ps1 -Slug &lt;project-slug&gt; -Yes` from the `workflow-launch2` repo.</step>
       <step>2. That delegates to `./scripts/create-repo-with-plan-docs.ps1` which:
@@ -32,7 +36,8 @@ scope: repository
         - Replaces all template placeholders (`ai-new-workflow-app-template` → new repo name, `intel-agency` → new owner)
         - Commits and pushes the seeded repo
       </step>
-      <step>3. On push, the clone's `validate` workflow runs CI (lint, scan, tests, devcontainer build).</step>
+      <step>3. On push, the clone's `validate` workflow runs CI (lint, scan, tests, devcontainer build) and the `publish-docker` workflow builds and pushes the base Docker image to GHCR.</step>
+      <step>4. On successful `publish-docker` completion, the `prebuild-devcontainer` workflow is triggered (via `workflow_run`) to build and push the prebuilt devcontainer image. Together, `publish-docker` → `prebuild-devcontainer` form the devcontainer prebuild caching pipeline that the `orchestrator-agent` workflow relies on to quickly spin up devcontainers.</step>
     </creation_workflow>
 
     <template_design_constraints>
