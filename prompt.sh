@@ -52,6 +52,12 @@ if [[ -z "${KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY:-}" ]]; then
     exit 1
 fi
 
+# Authenticate GitHub CLI and set MCP-compatible token
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    export GITHUB_PERSONAL_ACCESS_TOKEN="${GITHUB_TOKEN}"
+    echo "${GITHUB_TOKEN}" | gh auth login --with-token 2>/dev/null || true
+fi
+
 # Embed basic auth credentials into the attach URL if provided
 if [[ -n "$attach_url" && -n "$auth_user" && -n "$auth_pass" ]]; then
     # Warn if credentials are being sent over plain HTTP
