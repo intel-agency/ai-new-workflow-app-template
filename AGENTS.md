@@ -101,6 +101,7 @@ role: Orchestrator Agent
   <environment_setup>
     <secrets>
       <item>`ZHIPU_API_KEY` — ZhipuAI model access; set in repo Settings → Secrets.</item>
+      <item>`KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY` — Kimi (Moonshot) model access; set in repo Settings → Secrets.</item>
       <item>`GITHUB_TOKEN` — provided automatically by Actions.</item>
     </secrets>
     <devcontainer_cache>

@@ -47,6 +47,11 @@ if [[ -z "${ZHIPU_API_KEY:-}" ]]; then
     exit 1
 fi
 
+if [[ -z "${KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY:-}" ]]; then
+    echo "::error::KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY is not set" >&2
+    exit 1
+fi
+
 # Embed basic auth credentials into the attach URL if provided
 if [[ -n "$attach_url" && -n "$auth_user" && -n "$auth_pass" ]]; then
     # Warn if credentials are being sent over plain HTTP
