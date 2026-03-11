@@ -50,6 +50,10 @@
     "memory": {
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-memory"]
+    },
+    "github": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-github"]
     }
   }
 }
