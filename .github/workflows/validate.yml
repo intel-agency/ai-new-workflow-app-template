@@ -62,7 +62,6 @@ jobs:
             .devcontainer/devcontainer.json \
             .github/.devcontainer/devcontainer.json \
             .github/.labels.json \
-            .opencode/opencode.json \
             .vscode/settings.json \
             global.json \
             opencode.json \
