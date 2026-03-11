@@ -74,13 +74,64 @@ opencode_args=(
 opencode_args+=("$prompt")
 
 echo "Starting opencode at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# Idle watchdog: kill opencode if it produces no output for IDLE_TIMEOUT_SECS.
+# An active agent continuously emits tool calls, reasoning, etc. Sustained silence
+# means it's stuck. This replaces a hard wall-clock timeout so long-running but
+# actively-working agents aren't killed prematurely.
+IDLE_TIMEOUT_SECS=900   # 15 minutes of no output
+HARD_CEILING_SECS=5400  # 90-minute absolute safety net
+OUTPUT_LOG=$(mktemp /tmp/opencode-output.XXXXXX)
+
 set +e
-stdbuf -oL -eL timeout 10m opencode "${opencode_args[@]}" 2>&1
+
+# Start opencode with output redirected to a log file
+stdbuf -oL -eL opencode "${opencode_args[@]}" > "$OUTPUT_LOG" 2>&1 &
+OPENCODE_PID=$!
+
+# Stream the log to stdout in real-time so CI can see it
+tail -f "$OUTPUT_LOG" &
+TAIL_PID=$!
+
+START_TIME=$(date +%s)
+IDLE_KILLED=0
+
+# Watchdog loop: check output freshness every 30 seconds
+while kill -0 "$OPENCODE_PID" 2>/dev/null; do
+    sleep 30
+
+    # Hard ceiling safety net
+    now=$(date +%s)
+    elapsed=$(( now - START_TIME ))
+    if [[ $elapsed -ge $HARD_CEILING_SECS ]]; then
+        echo ""
+        echo "::warning::opencode hit ${HARD_CEILING_SECS}s hard ceiling; terminating"
+        kill "$OPENCODE_PID" 2>/dev/null
+        IDLE_KILLED=1
+        break
+    fi
+
+    # Idle detection: check last modification time of the output log
+    last_mod=$(stat -c %Y "$OUTPUT_LOG" 2>/dev/null || echo "$now")
+    idle=$(( now - last_mod ))
+    if [[ $idle -ge $IDLE_TIMEOUT_SECS ]]; then
+        echo ""
+        echo "::warning::opencode idle for $(( idle / 60 ))m (no output); terminating"
+        kill "$OPENCODE_PID" 2>/dev/null
+        IDLE_KILLED=1
+        break
+    fi
+done
+
+wait "$OPENCODE_PID" 2>/dev/null
 OPENCODE_EXIT=$?
+kill "$TAIL_PID" 2>/dev/null
+wait "$TAIL_PID" 2>/dev/null
+rm -f "$OUTPUT_LOG"
+
 set -e
 
-if [[ ${OPENCODE_EXIT} -eq 124 ]]; then
-    echo "::warning::opencode run timed out after 10 minutes; continuing workflow"
+if [[ $IDLE_KILLED -eq 1 ]]; then
     exit 0
 fi
 
