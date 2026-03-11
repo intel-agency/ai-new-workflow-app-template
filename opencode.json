@@ -12,6 +12,31 @@
             "context": 200000,
             "output": 131072
           }
+        },
+        "glm-4.5-x": {
+          "name": "GLM-4.5-X",
+          "limit": {
+            "context": 128000,
+            "output": 16384
+          }
+        },
+        "glm-4.5-air-x": {
+          "name": "GLM-4.5-Air-X",
+          "limit": {
+            "context": 128000,
+            "output": 16384
+          }
+        }
+      }
+    },
+    "kimi-coding-plan": {
+      "models": {
+        "kimi-for-coding": {
+          "name": "Kimi for Coding",
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
         }
       }
     }
