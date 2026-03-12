@@ -79,8 +79,10 @@ jobs:
       - name: Validate JSON files against schemas
         run: |
           pip install --quiet check-jsonschema
-          # Validate any JSON files that declare a $schema
-          for f in opencode.json .devcontainer/devcontainer.json .github/.devcontainer/devcontainer.json; do
+          # Validate devcontainer.json files that declare a $schema
+          # (opencode.json is excluded because it uses custom provider models
+          #  not in the official schema enum)
+          for f in .devcontainer/devcontainer.json .github/.devcontainer/devcontainer.json; do
             if [ -f "$f" ] && jq -e '."$schema"' "$f" > /dev/null 2>&1; then
               schema_url=$(jq -r '."$schema"' "$f")
               echo "Validating $f against $schema_url..."
