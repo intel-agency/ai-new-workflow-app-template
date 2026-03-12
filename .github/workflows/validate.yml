@@ -76,6 +76,17 @@ jobs:
             exit 1
           fi
 
+      - name: Validate JSON files against schemas
+        run: |
+          pip install --quiet check-jsonschema
+          # Validate any JSON files that declare a $schema
+          for f in opencode.json .devcontainer/devcontainer.json .github/.devcontainer/devcontainer.json; do
+            if [ -f "$f" ] && jq -e '."$schema"' "$f" > /dev/null 2>&1; then
+              echo "Validating $f against its \$schema..."
+              check-jsonschema "$f"
+            fi
+          done
+
       - name: Validate devcontainer.json
         run: |
           npx --yes @devcontainers/cli@0.84.0 validate --workspace-folder . || true
