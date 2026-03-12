@@ -83,7 +83,7 @@ jobs:
           for f in opencode.json .devcontainer/devcontainer.json .github/.devcontainer/devcontainer.json; do
             if [ -f "$f" ] && jq -e '."$schema"' "$f" > /dev/null 2>&1; then
               echo "Validating $f against its \$schema..."
-              check-jsonschema "$f"
+              check-jsonschema --schemafile "$f" --verbose
             fi
           done
 
