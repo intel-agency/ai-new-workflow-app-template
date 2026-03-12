@@ -53,7 +53,7 @@ context: "Expanding application development patterns"
 | Item | URL |
 |------|-----|
 | **Canonical Repo** | `https://github.com/nam20485/agent-instructions` |
-| **Branch** | Derived from `.github/copilot-instructions.md` → `<configuration><branch>` (default: `main` if absent) |
+| **Branch** | Derived from `AGENTS.md` → `<configuration><branch>` (default: `main` if absent) |
 | **Raw Content Base** | `https://raw.githubusercontent.com/nam20485/agent-instructions/{branch}/` |
 
 ### Core Instruction Modules
@@ -150,7 +150,7 @@ context: "Expanding application development patterns"
 
 - **Brevity:** Responses must be the minimum size that fully answers the query.
 - **No Speculation:** Only return information that exists in the instructions; flag gaps.
-- **Single Source:** Always fetch from `nam20485/agent-instructions` using the branch resolved from `.github/copilot-instructions.md`.
+- **Single Source:** Always fetch from `nam20485/agent-instructions` using the branch resolved from `AGENTS.md`.
 - **No Side Effects in Retrieve Mode:** Do not modify files when retrieving.
 - **Approval Required for Insert:** Never auto-commit; always propose first.
 
@@ -170,7 +170,7 @@ If the chain is long, return the file/URL and tell the delegator to open it.
 
 To fetch raw content from the canonical repo (using the configured `{branch}`):
 
-0. Read `{branch}` from `.github/copilot-instructions.md` → `<configuration><branch>` (default: `main` if absent)
+0. Read `{branch}` from `AGENTS.md` → `<configuration><branch>` (default: `main` if absent)
 
 1. Start with: `https://github.com/nam20485/agent-instructions/blob/{branch}/<path>`
 2. Replace `https://github.com/` → `https://raw.githubusercontent.com/`

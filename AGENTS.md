@@ -22,7 +22,7 @@ scope: repository
     </summary>
 
     <template-clone-instances>
-      Once the template has been cloned into a new instance, this file must be updated to match the new repo's specifics (e.g., name, links, instructions).
+      Once the template has been cloned into a new instance, this file must be updated to match the new repo's specifics (e.g., name, links, instructions). 
     </template-clone-instances>
 
     <creation_workflow>
