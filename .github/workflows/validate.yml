@@ -82,8 +82,9 @@ jobs:
           # Validate any JSON files that declare a $schema
           for f in opencode.json .devcontainer/devcontainer.json .github/.devcontainer/devcontainer.json; do
             if [ -f "$f" ] && jq -e '."$schema"' "$f" > /dev/null 2>&1; then
-              echo "Validating $f against its \$schema..."
-              check-jsonschema --schemafile "$f" --verbose
+              schema_url=$(jq -r '."$schema"' "$f")
+              echo "Validating $f against $schema_url..."
+              check-jsonschema --schemafile "$schema_url" "$f"
             fi
           done
 
