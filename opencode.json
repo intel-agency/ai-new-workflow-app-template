@@ -28,20 +28,10 @@
           }
         }
       }
-    },
-    "kimi-coding-plan": {
-      "models": {
-        "kimi-for-coding": {
-          "name": "Kimi for Coding",
-          "limit": {
-            "context": 262144,
-            "output": 32768
-          }
-        }
-      }
-    }
+    }   
   },
   "model": "zai-coding-plan/glm-5",
+  "small_model": "zai-coding-plan/glm-4.5-air-x",
   "mcp": {
     "sequential-thinking": {
       "type": "local",
