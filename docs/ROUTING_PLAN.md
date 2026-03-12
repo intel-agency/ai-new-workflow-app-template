@@ -26,11 +26,11 @@ Routes are selected **only** when explicitly requested. Precedence order:
    - Label `route:cloud` → same as the cloud comment command.
 
 3. **Default (no explicit request)**:
-   - Run on `ubuntu-latest` as today, with no local attach (no `-a` flag passed to `prompt.sh`).
+   - Run on `ubuntu-latest` as today, with no local attach (no `-a` flag passed to `run_opencode_prompt.sh`).
 
 ### Analyzed Output Values
 
-The `analyze-trigger` job emits two outputs consumed by `run-orchestrator`. Credentials are never composed into a single string — they flow as separate `--remote-env` injections into `devcontainer exec`, matching how `prompt.sh` already resolves `OPENCODE_AUTH_USER` / `OPENCODE_AUTH_PASS` from the environment.
+The `analyze-trigger` job emits two outputs consumed by `run-orchestrator`. Credentials are never composed into a single string — they flow as separate `--remote-env` injections into `devcontainer exec`, matching how `run_opencode_prompt.sh` already resolves `OPENCODE_AUTH_USER` / `OPENCODE_AUTH_PASS` from the environment.
 
 Note: the port is embedded directly in the URL secret value (e.g. `http://192.168.1.x:4096`). There is no separate port flag.
 
@@ -63,7 +63,7 @@ Note: the port is embedded directly in the URL secret value (e.g. `http://192.16
      - `OPENCODE_AUTH_USER` — from the `OPENCODE_AUTH_USER` secret.
      - `OPENCODE_AUTH_PASS` — from the `OPENCODE_AUTH_PASS` secret.
 
-     Inside the devcontainer, `prompt.sh` is called with `-a "$OPENCODE_ATTACH_URL"` appended. `prompt.sh` already reads `OPENCODE_AUTH_USER` / `OPENCODE_AUTH_PASS` from the environment, so no additional flag-passing is needed for credentials. When `connection_method == 'none'` (default), the invocation is byte-for-byte identical to today.
+     Inside the devcontainer, `run_opencode_prompt.sh` is called with `-a "$OPENCODE_ATTACH_URL"` appended. `run_opencode_prompt.sh` already reads `OPENCODE_AUTH_USER` / `OPENCODE_AUTH_PASS` from the environment, so no additional flag-passing is needed for credentials. When `connection_method == 'none'` (default), the invocation is byte-for-byte identical to today.
 
 ## Required Secrets and Variables (workflow usage)
 
@@ -169,7 +169,7 @@ Once this plan is approved:
 
 1. Refactor `.github/workflows/orchestrator-agent.yml` to split into `analyze-trigger` + `run-orchestrator` jobs.
 2. Add conditional Tailscale step in `run-orchestrator`.
-3. Update the `devcontainer exec` call to conditionally inject `OPENCODE_ATTACH_URL`, `OPENCODE_AUTH_USER`, `OPENCODE_AUTH_PASS` as `--remote-env` values and pass `-a "$OPENCODE_ATTACH_URL"` to `prompt.sh` when `connection_method != 'none'`.
+3. Update the `devcontainer exec` call to conditionally inject `OPENCODE_ATTACH_URL`, `OPENCODE_AUTH_USER`, `OPENCODE_AUTH_PASS` as `--remote-env` values and pass `-a "$OPENCODE_ATTACH_URL"` to `run_opencode_prompt.sh` when `connection_method != 'none'`.
 4. Add new fixtures to `test/fixtures/` for comment and label routing scenarios.
 5. Update `AGENTS.md` to document the routing pattern so future agents understand the expected behavior.
 

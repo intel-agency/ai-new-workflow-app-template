@@ -31,7 +31,7 @@ jobs:
       - name: Lint shell scripts
         run: |
           sudo apt-get update && sudo apt-get install -y shellcheck
-          shellcheck --severity=warning test/*.sh prompt.sh
+          shellcheck --severity=warning test/*.sh run_opencode_prompt.sh
 
       - name: Lint PowerShell scripts
         shell: pwsh
