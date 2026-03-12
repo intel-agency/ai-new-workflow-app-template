@@ -423,3 +423,4 @@ gha-creds-*.json
 docker/validation/logs/
 docker/validation/results.jsonl
 docker/.env
+models.json
