@@ -136,17 +136,21 @@ jobs:
       - name: Run prompt assembly tests
         run: bash test/test-prompt-assembly.sh
 
+  test-image-tag-logic:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run image tag logic tests
+        run: bash test/test-image-tag-logic.sh
+
   test-devcontainer-build:
     needs: lint
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: read
-    # Only run the expensive build when devcontainer files change
-    if: >-
-      github.event_name == 'push' ||
-      contains(github.event.pull_request.changed_files_url, '.devcontainer') ||
-      true
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
