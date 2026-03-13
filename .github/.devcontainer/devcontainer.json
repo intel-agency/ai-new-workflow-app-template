@@ -4,5 +4,6 @@
   "containerEnv": {
     "DOTNET_ROOT": "/usr/share/dotnet"
   },
+  "forwardPorts": [4096],
   "remoteUser": "vscode"
 }
