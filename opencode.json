@@ -26,6 +26,27 @@
             "context": 128000,
             "output": 16384
           }
+        },
+        "glm-4.7": {
+          "name": "GLM-4.7",
+          "limit": {
+            "context": 200000,
+            "output": 131072
+          }
+        },
+        "glm-4.7-flash": {
+          "name": "GLM-4.7-Flash",
+          "limit": {
+            "context": 200000,
+            "output": 131072
+          }
+        },
+        "glm-4.7-flashx": {
+          "name": "GLM-4.7-FlashX",
+          "limit": {
+            "context": 200000,
+            "output": 131072
+          }
         }
       }
     }   
