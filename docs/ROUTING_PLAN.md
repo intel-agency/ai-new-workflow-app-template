@@ -84,6 +84,28 @@ These are referenced by the workflow YAML. They must be populated via the one-ti
 | --- | --- |
 | `SELF_HOSTED_RUNNER_LABEL` | Runner label(s) for the local self-hosted runner — must match `--labels` used during runner registration |
 
+## In-Container Server (default path)
+
+When neither `self-hosted` nor `cloud` routing is requested, the workflow now starts an `opencode serve` backend **inside the devcontainer** and attaches to it locally. This is also the default behavior when the consumer devcontainer is opened in VS Code.
+
+**How it works:**
+
+1. `scripts/start-opencode-server.sh` is a guarded bootstrapper that starts `opencode serve` on `0.0.0.0:4096` and waits for readiness.
+2. The consumer devcontainer calls it via `postStartCommand`, so the server is up as soon as the container finishes starting.
+3. The workflow calls it explicitly after `devcontainer up`, then passes `-a "http://127.0.0.1:4096"` to `run_opencode_prompt.sh`.
+4. The script is idempotent — repeated calls are no-ops if the server is already healthy.
+
+This means the default `connection_method == 'none'` path **still does not connect to an external machine**, but it does benefit from a warm `opencode serve` process (no MCP cold boot on every `opencode run`).
+
+Optional env vars for tuning the in-container server:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `OPENCODE_SERVER_HOSTNAME` | `0.0.0.0` | Bind address for `opencode serve` |
+| `OPENCODE_SERVER_PORT` | `4096` | Listen port |
+| `OPENCODE_SERVER_PASSWORD` | _(unset)_ | Enables HTTP basic auth (username defaults to `opencode`) |
+| `OPENCODE_SERVER_USERNAME` | _(unset)_ | Overrides basic auth username |
+
 ## Network Topology
 
 ### Current (interim)
