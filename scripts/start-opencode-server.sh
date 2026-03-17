@@ -33,10 +33,26 @@ if [[ -f "$OPENCODE_SERVER_PIDFILE" ]]; then
 
     log "stale opencode serve process found (pid ${existing_pid}); terminating before restart"
     kill "$existing_pid" 2>/dev/null || true
-    sleep 1
-  fi
 
-  rm -f "$OPENCODE_SERVER_PIDFILE"
+    # Wait up to 5 seconds for graceful termination, checking every 0.5s
+    graceful_timeout=5
+    wait_start="${EPOCHSECONDS:-$(date +%s)}"
+    while kill -0 "$existing_pid" 2>/dev/null; do
+      current="${EPOCHSECONDS:-$(date +%s)}"
+      if (( current - wait_start >= graceful_timeout )); then
+        log "process did not terminate gracefully within ${graceful_timeout}s; sending SIGKILL"
+        kill -9 "$existing_pid" 2>/dev/null || true
+        break
+      fi
+      sleep 0.5
+    done
+
+    # Clean up PID file only after confirming process is gone
+    rm -f "$OPENCODE_SERVER_PIDFILE"
+  else
+    # PID file exists but process is not running; clean up stale file
+    rm -f "$OPENCODE_SERVER_PIDFILE"
+  fi
 fi
 
 if is_server_ready; then
@@ -52,7 +68,11 @@ nohup opencode serve \
 server_pid=$!
 echo "$server_pid" > "$OPENCODE_SERVER_PIDFILE"
 
-for ((attempt = 1; attempt <= OPENCODE_SERVER_READY_TIMEOUT_SECS; attempt++)); do
+# Use wall-clock time for accurate timeout enforcement (curl has its own connect-timeout)
+ready_start="${EPOCHSECONDS:-$(date +%s)}"
+deadline=$(( ready_start + OPENCODE_SERVER_READY_TIMEOUT_SECS ))
+
+while true; do
   if is_server_ready; then
     log "opencode serve is ready (pid ${server_pid}); logs: ${OPENCODE_SERVER_LOG}"
     exit 0
@@ -62,6 +82,11 @@ for ((attempt = 1; attempt <= OPENCODE_SERVER_READY_TIMEOUT_SECS; attempt++)); d
     echo "opencode serve exited before becoming ready; tail of log:" >&2
     tail -n 50 "$OPENCODE_SERVER_LOG" >&2 || true
     exit 1
+  fi
+
+  current="${EPOCHSECONDS:-$(date +%s)}"
+  if (( current >= deadline )); then
+    break
   fi
 
   sleep 1
