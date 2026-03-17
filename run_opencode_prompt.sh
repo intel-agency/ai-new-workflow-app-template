@@ -56,12 +56,9 @@ fi
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
     export GITHUB_PERSONAL_ACCESS_TOKEN="${GITHUB_TOKEN}"
     export GH_TOKEN="${GITHUB_TOKEN}"
-    if echo "${GITHUB_TOKEN}" | gh auth login --with-token 2>&1; then
-        echo "gh CLI authenticated successfully"
-        gh auth status
-    else
-        echo "::warning::gh auth login failed — gh CLI commands may not work"
-    fi
+    # GH_TOKEN is already in the environment; gh uses it automatically.
+    # Running gh auth login --with-token when GH_TOKEN is set causes a conflict.
+    echo "gh CLI will use GH_TOKEN from environment"
 else
     echo "::warning::GITHUB_TOKEN is not set — gh CLI will not be authenticated"
 fi
@@ -88,6 +85,8 @@ opencode_args=(
     --log-level "$log_level"
 )
 [[ -n "$attach_url" ]] && opencode_args+=(--attach "$attach_url")
+# Default --dir to cwd when attaching; opencode needs a workspace to scope the session to.
+[[ -z "$work_dir" && -n "$attach_url" ]] && work_dir="$(pwd)"
 [[ -n "$work_dir"   ]] && opencode_args+=(--dir    "$work_dir")
 [[ -n "$print_logs" ]] && opencode_args+=("$print_logs")
 opencode_args+=("$prompt")
