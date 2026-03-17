@@ -13,7 +13,7 @@ log() {
 }
 
 is_server_ready() {
-  curl -sS -o /dev/null --connect-timeout 2 "$OPENCODE_SERVER_READY_URL"
+  curl -s -o /dev/null --connect-timeout 2 "$OPENCODE_SERVER_READY_URL"
 }
 
 if ! command -v opencode >/dev/null 2>&1; then
