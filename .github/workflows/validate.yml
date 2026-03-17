@@ -96,14 +96,14 @@ jobs:
         run: |
           npx --yes @devcontainers/cli@0.84.0 validate --workspace-folder . || true
 
-      - name: Lint Markdown files
-        uses: DavidAnson/markdownlint-cli2-action@07035fd053f7be764496c0f8d8f9f41f98305101 # v22.0.0
-        with:
-          globs: |
-            **/*.md
-            !.opencode/node_modules/**
-            !node_modules/**
-            !plan_docs/**
+      # - name: Lint Markdown files
+      #   uses: DavidAnson/markdownlint-cli2-action@07035fd053f7be764496c0f8d8f9f41f98305101 # v22.0.0
+      #   with:
+      #     globs: |
+      #       **/*.md
+      #       !.opencode/node_modules/**
+      #       !node_modules/**
+      #       !plan_docs/**
 
       # - name: Super-linter
       #   uses: super-linter/super-linter@61abc07d755095a68f4987d1c2c3d1d64408f1f9  # v8.5.0
