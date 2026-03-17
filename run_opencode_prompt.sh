@@ -85,7 +85,10 @@ opencode_args=(
     --log-level "$log_level"
 )
 [[ -n "$attach_url" ]] && opencode_args+=(--attach "$attach_url")
-# Default --dir to cwd when attaching; opencode needs a workspace to scope the session to.
+# Default --dir to cwd when attaching. NOTE: --dir is interpreted by the *server*
+# (the opencode serve process), so this path must be valid on the server's filesystem.
+# When client and server share the same filesystem (e.g. both inside the devcontainer)
+# pwd is correct. If attaching remotely from outside the container, pass -d <path> explicitly.
 [[ -z "$work_dir" && -n "$attach_url" ]] && work_dir="$(pwd)"
 [[ -n "$work_dir"   ]] && opencode_args+=(--dir    "$work_dir")
 [[ -n "$print_logs" ]] && opencode_args+=("$print_logs")
