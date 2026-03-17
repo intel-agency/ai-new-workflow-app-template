@@ -18,13 +18,15 @@ set -euo pipefail
 #   -w <dir>      workspace folder        (env: WORKSPACE_FOLDER,     default: .)
 #
 # prompt-only options:
-#   -f <file>     assembled prompt file path (required)
+#   -f <file>     assembled prompt file path (required, or use -p)
+#   -p <prompt>   inline prompt string       (required, or use -f)
 #   -u <url>      opencode server URL        (env: OPENCODE_SERVER_URL, default: http://127.0.0.1:4096)
 
 DEVCONTAINER_CONFIG="${DEVCONTAINER_CONFIG:-.devcontainer/devcontainer.json}"
 WORKSPACE_FOLDER="${WORKSPACE_FOLDER:-.}"
 OPENCODE_SERVER_URL="${OPENCODE_SERVER_URL:-http://127.0.0.1:4096}"
 PROMPT_FILE=""
+PROMPT_STRING=""
 
 usage() {
     cat >&2 <<'EOF'
@@ -42,7 +44,8 @@ Shared options:
   -w <dir>      Workspace folder          (default: .)
 
 'prompt' options:
-  -f <file>     Assembled prompt file path (required)
+  -f <file>     Assembled prompt file path (required, or use -p)
+  -p <prompt>   Inline prompt string       (required, or use -f)
   -u <url>      opencode server URL        (default: http://127.0.0.1:4096)
 
 Environment variables:
@@ -59,11 +62,12 @@ fi
 COMMAND="$1"
 shift
 
-while getopts ":c:w:f:u:" opt; do
+while getopts ":c:w:f:p:u:" opt; do
     case $opt in
         c) DEVCONTAINER_CONFIG="$OPTARG" ;;
         w) WORKSPACE_FOLDER="$OPTARG" ;;
         f) PROMPT_FILE="$OPTARG" ;;
+        p) PROMPT_STRING="$OPTARG" ;;
         u) OPENCODE_SERVER_URL="$OPTARG" ;;
         *) usage ;;
     esac
@@ -97,8 +101,8 @@ case "$COMMAND" in
         ;;
 
     prompt)
-        if [[ -z "$PROMPT_FILE" ]]; then
-            echo "error: -f <prompt-file> is required for the 'prompt' command" >&2
+        if [[ -z "$PROMPT_FILE" && -z "$PROMPT_STRING" ]]; then
+            echo "error: -f <prompt-file> or -p <prompt> is required for the 'prompt' command" >&2
             usage
         fi
         for var in ZHIPU_API_KEY KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY GITHUB_TOKEN; do
@@ -107,12 +111,18 @@ case "$COMMAND" in
                 exit 1
             fi
         done
+        # Build the prompt source arg: -p takes precedence over -f when both are given
+        if [[ -n "$PROMPT_STRING" ]]; then
+            prompt_arg=(-p "$PROMPT_STRING")
+        else
+            prompt_arg=(-f "$PROMPT_FILE")
+        fi
         devcontainer exec "${shared_args[@]}" \
             --remote-env ZHIPU_API_KEY="$ZHIPU_API_KEY" \
             --remote-env KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY="$KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY" \
             --remote-env GITHUB_TOKEN="$GITHUB_TOKEN" \
             --remote-env GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_TOKEN" \
-            -- bash ./run_opencode_prompt.sh -a "$OPENCODE_SERVER_URL" -f "$PROMPT_FILE"
+            -- bash ./run_opencode_prompt.sh -a "$OPENCODE_SERVER_URL" "${prompt_arg[@]}"
         ;;
 
     stop|down)
