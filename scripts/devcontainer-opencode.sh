@@ -80,8 +80,18 @@ case "$COMMAND" in
         ;;
 
     start)
-        # Ensure the container is running first (no-op if already up, fast restart if stopped)
-        devcontainer up "${shared_args[@]}"
+        abs_workspace="$(cd "$WORKSPACE_FOLDER" && pwd)"
+        container_id="$(docker ps -aq --filter "label=devcontainer.local_folder=${abs_workspace}")"
+        if [[ -z "$container_id" ]]; then
+            echo "[devcontainer-opencode] no container found; creating via 'up'"
+            devcontainer up "${shared_args[@]}"
+        else
+            container_state="$(docker inspect --format '{{.State.Status}}' "$container_id")"
+            if [[ "$container_state" != "running" ]]; then
+                echo "[devcontainer-opencode] restarting stopped container ${container_id}"
+                docker start "$container_id"
+            fi
+        fi
         devcontainer exec "${shared_args[@]}" \
             -- bash ./scripts/start-opencode-server.sh
         ;;
