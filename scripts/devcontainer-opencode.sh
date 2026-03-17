@@ -10,6 +10,8 @@ set -euo pipefail
 #   up      Start (or reconnect to) the devcontainer
 #   start   Ensure opencode serve is running inside the container
 #   prompt  Dispatch a prompt to the agent via opencode run --attach
+#   stop    Gracefully stop the container (keeps it for fast restart)
+#   down    Stop and remove the container (full teardown)
 #
 # Shared options (env or flag, all commands):
 #   -c <config>   devcontainer.json path  (env: DEVCONTAINER_CONFIG,  default: .devcontainer/devcontainer.json)
@@ -32,6 +34,8 @@ Commands:
   up      Start (or reconnect to) the devcontainer
   start   Ensure opencode serve is running inside the container
   prompt  Dispatch a prompt file to the agent via opencode run --attach
+  stop    Gracefully stop the container (keeps it; fast restart via 'up')
+  down    Stop and remove the container (full teardown)
 
 Shared options:
   -c <config>   Path to devcontainer.json (default: .devcontainer/devcontainer.json)
@@ -97,6 +101,22 @@ case "$COMMAND" in
             --remote-env GITHUB_TOKEN="$GITHUB_TOKEN" \
             --remote-env GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_TOKEN" \
             -- bash ./run_opencode_prompt.sh -a "$OPENCODE_SERVER_URL" -f "$PROMPT_FILE"
+        ;;
+
+    stop|down)
+        # Locate the container via the label devcontainer stamps with the workspace path.
+        abs_workspace="$(cd "$WORKSPACE_FOLDER" && pwd)"
+        container_id="$(docker ps -aq --filter "label=devcontainer.local_folder=${abs_workspace}")"
+        if [[ -z "$container_id" ]]; then
+            echo "[devcontainer-opencode] no running container found for workspace ${abs_workspace}" >&2
+            exit 1
+        fi
+        echo "[devcontainer-opencode] stopping container ${container_id}"
+        docker stop "$container_id"
+        if [[ "$COMMAND" == "down" ]]; then
+            echo "[devcontainer-opencode] removing container ${container_id}"
+            docker rm "$container_id"
+        fi
         ;;
 
     *)
