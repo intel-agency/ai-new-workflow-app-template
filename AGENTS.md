@@ -77,6 +77,7 @@ scope: repository
     <entry><path>.github/.devcontainer/devcontainer.json</path><description>Build-time devcontainer config (Dockerfile + Features: node, python, gh CLI)</description></entry>
     <entry><path>.devcontainer/devcontainer.json</path><description>Consumer devcontainer — pulls prebuilt GHCR image, forwards port 4096, and auto-starts `opencode serve` on container start</description></entry>
     <entry><path>scripts/start-opencode-server.sh</path><description>Guarded `opencode serve` bootstrapper used by the devcontainer lifecycle and workflow attach path</description></entry>
+    <entry><path>scripts/run-devcontainer-orchestrator.sh</path><description>One-shot script: brings up the devcontainer, ensures the opencode server is running, and executes the orchestrator agent. Used by the workflow and can be invoked directly locally.</description></entry>
     <!-- Tests -->
     <entry><path>test/</path><description>Shell-based tests: devcontainer build, tool availability, prompt assembly</description></entry>
 
