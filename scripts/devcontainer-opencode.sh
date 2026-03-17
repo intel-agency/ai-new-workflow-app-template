@@ -80,6 +80,8 @@ case "$COMMAND" in
         ;;
 
     start)
+        # Ensure the container is running first (no-op if already up, fast restart if stopped)
+        devcontainer up "${shared_args[@]}"
         devcontainer exec "${shared_args[@]}" \
             -- bash ./scripts/start-opencode-server.sh
         ;;
