@@ -52,6 +52,7 @@ jobs:
           $results = @()
           $results += Invoke-ScriptAnalyzer -Path ./prompt.ps1 -Severity Warning -ExcludeRule $excludeRules
           $results += Invoke-ScriptAnalyzer -Path ./scripts/ -Recurse -Severity Warning -ExcludeRule $excludeRules
+          $results += Invoke-ScriptAnalyzer -Path ./test/ -Recurse -Severity Warning -ExcludeRule $excludeRules
           if ($results.Count -gt 0) {
             $results | Format-Table -AutoSize
             throw "PSScriptAnalyzer found $($results.Count) issue(s)."
@@ -152,6 +153,34 @@ jobs:
 
       - name: Run image tag logic tests
         run: bash test/test-image-tag-logic.sh
+
+  test-pester:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      # Required so gh auth status succeeds inside subprocess invocations.
+      # Dry-run tests exit before gh issue create, so no real issues are created.
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -AllowClobber
+
+      - name: Run Pester tests
+        shell: pwsh
+        run: pwsh -NoProfile -File ./test/run-pester-tests.ps1 -OutputXml ./test-results-pester.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pester-test-results
+          path: test-results-pester.xml
+          if-no-files-found: ignore
 
   test-devcontainer-build:
     needs: lint
