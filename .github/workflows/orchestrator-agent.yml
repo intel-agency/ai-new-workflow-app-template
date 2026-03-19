@@ -79,23 +79,16 @@ jobs:
         # the runner. The image tag is stable (main-latest), so repeated runs
         # on warm runners benefit from the layer cache without extra config.
 
-      - name: Cache devcontainer CLI
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/.npm-global
-          key: devcontainer-cli-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: devcontainer-cli-${{ runner.os }}-
-
-      - name: Install devcontainer CLI
+      - name: Install devcontainer CLI from image
         run: |
-          npm config set prefix ~/.npm-global
-          export PATH="$HOME/.npm-global/bin:$PATH"
-          if ! command -v devcontainer &>/dev/null; then
-            npm install -g @devcontainers/cli
-          else
-            echo "devcontainer CLI already cached: $(devcontainer --version)"
-          fi
-          echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
+          # The devcontainer CLI is baked into the devcontainer image (see Dockerfile).
+          # Copy the binary from the already-pulled image so the runner host has it
+          # without a separate npm install step.
+          IMAGE="ghcr.io/${{ github.repository }}/devcontainer:main-latest"
+          CTR=$(docker create "$IMAGE")
+          docker cp "${CTR}:/usr/local/bin/devcontainer" /usr/local/bin/devcontainer
+          docker rm "${CTR}"
+          devcontainer --version
 
       - name: Start devcontainer
         run: bash ./scripts/devcontainer-opencode.sh up
