@@ -79,8 +79,19 @@ jobs:
         # the runner. The image tag is stable (main-latest), so repeated runs
         # on warm runners benefit from the layer cache without extra config.
 
+      - name: Cache devcontainer CLI
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.npm-global
+          key: devcontainer-cli-${{ runner.os }}-0.84.1
+
       - name: Install devcontainer CLI
-        run: npm install -g @devcontainers/cli@0.84.1
+        run: |
+          npm config set prefix ~/.npm-global
+          if ! command -v devcontainer &>/dev/null; then
+            npm install -g @devcontainers/cli@0.84.1
+          fi
+          echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
 
       - name: Start devcontainer
         run: bash ./scripts/devcontainer-opencode.sh up
