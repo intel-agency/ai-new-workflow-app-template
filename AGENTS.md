@@ -263,7 +263,7 @@ scope: repository
       <script name="scripts/import-labels.ps1">Imports labels from `.github/.labels.json` into the repository.</script>
       <script name="scripts/create-milestones.ps1">Creates project milestones from plan docs.</script>
       <script name="scripts/test-github-permissions.ps1">Verifies `GITHUB_TOKEN` has required permissions (contents, issues, PRs, packages).</script>
-      <script name="scripts/query.ps1">GraphQL query helper for GitHub API.</script>
+      <script name="scripts/query.ps1">PR review thread manager — fetches unresolved review threads from a PR, summarizes them, and can batch-reply and resolve them. Supports `--AutoResolve`, `--DryRun`, `--Interactive`, `--ReplyEach`, `--Path`, `--BodyContains` filtering. Use this instead of writing ad-hoc scripts to resolve PR review comments.</script>
       <script name="scripts/update-remote-indices.ps1">Updates remote instruction module indices.</script>
     </scripts_directory>
   </available_tools>

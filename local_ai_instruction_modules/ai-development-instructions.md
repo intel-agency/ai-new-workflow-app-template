@@ -26,6 +26,35 @@ pwsh ./scripts/create-milestones.ps1
 ./scripts/create-milestones.ps1
 ```
 
+### PR Review Thread Management
+
+**Use `scripts/query.ps1` to manage PR review comments.** This is the canonical tool for fetching, replying to, and resolving unresolved review threads on pull requests. Do NOT write ad-hoc Python or shell scripts for this — the PowerShell script handles GraphQL pagination, error handling, interactive mode, and filtering.
+
+```powershell
+# List unresolved threads (dry run, no resolution)
+pwsh ./scripts/query.ps1 -Owner <owner> -Repo <repo> -PullRequestNumber <num> -DryRun
+
+# Resolve all unresolved threads with a reply message
+pwsh ./scripts/query.ps1 -Owner <owner> -Repo <repo> -PullRequestNumber <num> -AutoResolve -ReplyEach "Addressed in commit abc123."
+
+# Filter by file path and resolve interactively
+pwsh ./scripts/query.ps1 -Owner <owner> -Repo <repo> -PullRequestNumber <num> -Path "pyproject.toml" -Interactive
+
+# Just list threads without resolving
+pwsh ./scripts/query.ps1 -Owner <owner> -Repo <repo> -PullRequestNumber <num> -NoResolve
+```
+
+Key flags:
+
+- `-AutoResolve` — resolve all matched threads without prompting
+- `-DryRun` — show what would be resolved without doing it
+- `-Interactive` — prompt for each thread individually
+- `-NoResolve` — list/summarize only, do not resolve
+- `-ReplyEach "message"` — post a reply to each thread before resolving
+- `-Path "pattern"` — filter threads by file path (wildcard match)
+- `-BodyContains "text"` — filter threads by comment body content
+- `-ThreadId "id"` — target a specific thread by GraphQL ID
+
 ## Architecture Overview
 
 ### AI-Powered Template System

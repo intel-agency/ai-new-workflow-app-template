@@ -24,6 +24,21 @@ Detect before running commands: `echo $0` (bash) or `$PSVersionTable` (pwsh).
 - Subissue: `gh issue create --title "Subissue Title" --body "Details" --parent 123`
 - PR: `gh pr create --title "Title" --body "Body" --base main`
 
+## PR Review Thread Management
+
+**Always use `scripts/query.ps1` instead of writing custom scripts for PR review comment resolution.**
+
+```powershell
+# List unresolved review threads
+pwsh ./scripts/query.ps1 -Owner <owner> -Repo <repo> -PullRequestNumber <num> -NoResolve
+
+# Auto-resolve all with a reply
+pwsh ./scripts/query.ps1 -Owner <owner> -Repo <repo> -PullRequestNumber <num> -AutoResolve -ReplyEach "Fixed in commit abc123."
+
+# Dry run (show what would be resolved)
+pwsh ./scripts/query.ps1 -Owner <owner> -Repo <repo> -PullRequestNumber <num> -DryRun
+```
+
 ## Git
 
 - Clone: `git clone https://github.com/owner/name.git`
