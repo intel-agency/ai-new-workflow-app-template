@@ -49,78 +49,13 @@ jobs:
           EVENT_JSON: ${{ toJson(github.event) }}
           CUSTOM_PROMPT: ${{ inputs.prompt }}
         run: |
-          set -x  # trace every command
-          ASSEMBLED_PROMPT=".assembled-orchestrator-prompt.md"
-
-          # If a custom prompt was provided via workflow_dispatch, use it directly
-          if [[ -n "${CUSTOM_PROMPT}" ]]; then
-            echo "::notice::Using custom prompt from workflow_dispatch input"
-            echo "${CUSTOM_PROMPT}" > "$ASSEMBLED_PROMPT"
-            echo "ORCHESTRATOR_PROMPT_PATH=$ASSEMBLED_PROMPT" >> "$GITHUB_ENV"
-            exit 0
-          fi
-
-          echo "::group::Event metadata"
-          echo "event_name=${{ github.event_name }}"
-          echo "event.action=${{ github.event.action }}"
-          echo "actor=${{ github.actor }}"
-          echo "repository=${{ github.repository }}"
-          echo "ref=${{ github.ref }}"
-          echo "sha=${{ github.sha }}"
-          echo "::endgroup::"
-
-          # Build the structured event context + JSON blob to inject
-          EVENT_BLOCK=$(cat <<BLOCK_END
-          Event Name: ${{ github.event_name }}
-          Action: ${{ github.event.action }}
-          Actor: ${{ github.actor }}
-          Repository: ${{ github.repository }}
-          Ref: ${{ github.ref }}
-          SHA: ${{ github.sha }}
-          BLOCK_END
-          )
-
-          # Assemble prompt in the workspace so it's available inside the devcontainer
-          PROMPT_TEMPLATE=".github/workflows/prompts/orchestrator-agent-prompt.md"
-
-          echo "::group::Template diagnostics"
-          echo "Template path: $PROMPT_TEMPLATE"
-          echo "Template exists: $(test -f "$PROMPT_TEMPLATE" && echo YES || echo NO)"
-          echo "Template size: $(wc -c < "$PROMPT_TEMPLATE") bytes, $(wc -l < "$PROMPT_TEMPLATE") lines"
-          echo "Injection point occurrences:"
-          grep -n '{{__EVENT_DATA__}}' "$PROMPT_TEMPLATE" || echo "  WARNING: no {{__EVENT_DATA__}} found in template!"
-          echo "::endgroup::"
-
-          # Replace {{__EVENT_DATA__}} injection point with structured context + full event JSON
-          {
-            sed '/{{__EVENT_DATA__}}/,$ d' "$PROMPT_TEMPLATE"
-            echo "$EVENT_BLOCK"
-            echo ""
-            echo "\`\`\`json"
-            echo "$EVENT_JSON"
-            echo "\`\`\`"
-          } > "$ASSEMBLED_PROMPT"
-
-          echo "::group::Assembled prompt diagnostics"
-          echo "Output path: $ASSEMBLED_PROMPT"
-          echo "Output exists: $(test -f "$ASSEMBLED_PROMPT" && echo YES || echo NO)"
-          echo "Output size: $(wc -c < "$ASSEMBLED_PROMPT") bytes, $(wc -l < "$ASSEMBLED_PROMPT") lines"
-          echo "--- First 20 lines ---"
-          head -20 "$ASSEMBLED_PROMPT"
-          echo "--- Last 30 lines ---"
-          tail -30 "$ASSEMBLED_PROMPT"
-          echo "--- Key sections present ---"
-          echo "  Instructions:      $(grep -c '## Instructions' "$ASSEMBLED_PROMPT" || echo 0)"
-          echo "  Branching Logic:   $(grep -c 'EVENT_DATA Branching Logic' "$ASSEMBLED_PROMPT" || echo 0)"
-          echo "  Match Clauses:     $(grep -c '## Match Clause Cases' "$ASSEMBLED_PROMPT" || echo 0)"
-          echo "  Helper Functions:  $(grep -c '## Helper Functions' "$ASSEMBLED_PROMPT" || echo 0)"
-          echo "  Final section:     $(grep -c '## Final' "$ASSEMBLED_PROMPT" || echo 0)"
-          echo "  Event Name line:   $(grep -c 'Event Name:' "$ASSEMBLED_PROMPT" || echo 0)"
-          echo "  JSON code block:   $(grep -c "^\`\`\`json" "$ASSEMBLED_PROMPT" || echo 0)"
-          echo "  Injection leftover:$(grep -c '{{__EVENT_DATA__}}' "$ASSEMBLED_PROMPT" || echo 0)"
-          echo "::endgroup::"
-
-          echo "ORCHESTRATOR_PROMPT_PATH=$ASSEMBLED_PROMPT" >> "$GITHUB_ENV"
+          bash ./scripts/assemble-orchestrator-prompt.sh \
+            "${{ github.event_name }}" \
+            "${{ github.event.action }}" \
+            "${{ github.actor }}" \
+            "${{ github.repository }}" \
+            "${{ github.ref }}" \
+            "${{ github.sha }}"
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
@@ -140,9 +75,27 @@ jobs:
 
       - name: Pull devcontainer image
         run: docker pull "ghcr.io/${{ github.repository }}/devcontainer:main-latest"
+        # Docker automatically skips pulling layers that are already cached on
+        # the runner. The image tag is stable (main-latest), so repeated runs
+        # on warm runners benefit from the layer cache without extra config.
+
+      - name: Cache devcontainer CLI
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.npm-global
+          key: devcontainer-cli-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: devcontainer-cli-${{ runner.os }}-
 
       - name: Install devcontainer CLI
-        run: npm install -g @devcontainers/cli
+        run: |
+          npm config set prefix ~/.npm-global
+          export PATH="$HOME/.npm-global/bin:$PATH"
+          if ! command -v devcontainer &>/dev/null; then
+            npm install -g @devcontainers/cli
+          else
+            echo "devcontainer CLI already cached: $(devcontainer --version)"
+          fi
+          echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
 
       - name: Start devcontainer
         run: bash ./scripts/devcontainer-opencode.sh up
@@ -175,9 +128,7 @@ jobs:
               echo '  File: $ORCHESTRATOR_PROMPT_PATH';
               if [ -f '$ORCHESTRATOR_PROMPT_PATH' ]; then
                 echo '  EXISTS: YES';
-                echo '  Size:' \$(wc -c < '$ORCHESTRATOR_PROMPT_PATH') 'bytes,' \$(wc -l < '$ORCHESTRATOR_PROMPT_PATH') 'lines';
-                echo '  First 5 lines:';
-                head -5 '$ORCHESTRATOR_PROMPT_PATH';
+                echo '  Size:' \$(wc -c < '$ORCHESTRATOR_PROMPT_PATH') 'bytes,' \$(wc -l < '$ORCHESTRATOR_PROMPT_PATH') 'lines';                
               else
                 echo '  EXISTS: NO — prompt file not found inside devcontainer!';
                 echo '  Listing workspace root:';
