@@ -74,6 +74,7 @@ This repository is a **template for AI-assisted application development**. The a
 4. **Manual GitHub Web Interface** - **PROHIBITED**
 
 ### Sequential Thinking, Memory, and Gemini Tools (MANDATORY)
+
 **Use these MCP tools for ALL complex tasks:**
 
 1. **Sequential Thinking Tool** (`mcp_sequential_thinking_*`) - **ALWAYS USE** for:

@@ -18,7 +18,7 @@
   "forwardPorts": [
     4096
   ],
-  "postStartCommand": "bash ./scripts/devcontainer-opencode.sh start",
+  "postStartCommand": "bash ./scripts/start-opencode-server.sh",
   "customizations": {
     "vscode": {
       "extensions": [
