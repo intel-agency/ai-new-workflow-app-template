@@ -23,7 +23,7 @@ auth_pass="${OPENCODE_AUTH_PASS:-}"
 work_dir=""
 log_level="INFO"
 print_logs="--print-logs"
-format_flag=""
+format_flag=()
 
 while getopts ":f:p:a:u:P:d:l:L" opt; do
     case $opt in
@@ -129,7 +129,7 @@ fi
 # When DEBUG_ORCHESTRATOR is set, crank up diagnostics
 if [[ "${DEBUG_ORCHESTRATOR:-}" == "true" ]]; then
     log_level="DEBUG"
-    format_flag="--format json"
+    format_flag=(--format json)
     echo "[debug] DEBUG_ORCHESTRATOR=true — enabling verbose output"
 fi
 
@@ -141,7 +141,7 @@ opencode_args=(
     --log-level "$log_level"
 )
 [[ -n "$print_logs"  ]] && opencode_args+=(--print-logs)
-[[ -n "$format_flag" ]] && opencode_args+=(${format_flag})
+[[ ${#format_flag[@]} -gt 0 ]] && opencode_args+=("${format_flag[@]}")
 [[ -n "$attach_url" ]] && opencode_args+=(--attach "$attach_url")
 [[ -n "$work_dir"   ]] && opencode_args+=(--dir    "$work_dir")
 opencode_args+=("$prompt")
