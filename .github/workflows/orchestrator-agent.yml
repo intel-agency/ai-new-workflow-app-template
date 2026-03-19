@@ -79,16 +79,8 @@ jobs:
         # the runner. The image tag is stable (main-latest), so repeated runs
         # on warm runners benefit from the layer cache without extra config.
 
-      - name: Install devcontainer CLI from image
-        run: |
-          # The devcontainer CLI is baked into the devcontainer image (see Dockerfile).
-          # Copy the binary from the already-pulled image so the runner host has it
-          # without a separate npm install step.
-          IMAGE="ghcr.io/${{ github.repository }}/devcontainer:main-latest"
-          CTR=$(docker create "$IMAGE")
-          docker cp "${CTR}:/usr/local/bin/devcontainer" /usr/local/bin/devcontainer
-          docker rm "${CTR}"
-          devcontainer --version
+      - name: Install devcontainer CLI
+        run: npm install -g @devcontainers/cli@0.84.1
 
       - name: Start devcontainer
         run: bash ./scripts/devcontainer-opencode.sh up

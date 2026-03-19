@@ -53,7 +53,3 @@ RUN mkdir -p /etc/apt/keyrings \
 RUN curl -fsSL https://opencode.ai/install | bash -s -- --version "${OPENCODE_VERSION}" --no-modify-path \
     && cp /root/.opencode/bin/opencode /usr/local/bin/opencode \
     && chmod +x /usr/local/bin/opencode
-
-# devcontainer CLI — baked in so CI can copy the binary from the pulled image
-# instead of running npm install on the runner at workflow time.
-RUN npm install -g @devcontainers/cli@0.84.1
