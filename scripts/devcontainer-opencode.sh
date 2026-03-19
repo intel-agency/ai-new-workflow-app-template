@@ -122,6 +122,7 @@ case "$COMMAND" in
             --remote-env KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY="$KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY" \
             --remote-env GITHUB_TOKEN="$GITHUB_TOKEN" \
             --remote-env GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_TOKEN" \
+            --remote-env GH_ORCHESTRATION_AGENT_TOKEN="${GH_ORCHESTRATION_AGENT_TOKEN:-}" \
             -- bash ./run_opencode_prompt.sh -a "$OPENCODE_SERVER_URL" "${prompt_arg[@]}"
         ;;
 
