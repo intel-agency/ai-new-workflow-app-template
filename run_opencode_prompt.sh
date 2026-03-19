@@ -52,18 +52,63 @@ if [[ -z "${KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY:-}" ]]; then
     exit 1
 fi
 
-# Authenticate GitHub CLI and set MCP-compatible token
-if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    export GITHUB_PERSONAL_ACCESS_TOKEN="${GITHUB_TOKEN}"
-    export GH_TOKEN="${GITHUB_TOKEN}"
-    if echo "${GITHUB_TOKEN}" | gh auth login --with-token 2>&1; then
-        echo "gh CLI authenticated successfully"
-        gh auth status
-    else
-        echo "::warning::gh auth login failed — gh CLI commands may not work"
-    fi
+# Authenticate GitHub CLI and set MCP-compatible token.
+#
+# Token priority:
+#   1. GH_ORCHESTRATION_AGENT_TOKEN — org secret PAT with scopes: repo, workflow,
+#                                      project, read:org. Required for cross-repo access.
+#   2. GITHUB_TOKEN — the built-in Actions token. Scoped to this repo only; use as
+#                    a fallback when no cross-repo access is needed.
+if [[ -n "${GH_ORCHESTRATION_AGENT_TOKEN:-}" ]]; then
+    _active_token="${GH_ORCHESTRATION_AGENT_TOKEN}"
+    echo "Using GH_ORCHESTRATION_AGENT_TOKEN for authentication (cross-repo access enabled)"
+elif [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    _active_token="${GITHUB_TOKEN}"
+    echo "::warning::GH_ORCHESTRATION_AGENT_TOKEN is not set — falling back to GITHUB_TOKEN (this repo only)"
 else
-    echo "::warning::GITHUB_TOKEN is not set — gh CLI will not be authenticated"
+    echo "::error::Neither GH_ORCHESTRATION_AGENT_TOKEN nor GITHUB_TOKEN is set — gh CLI will not be authenticated" >&2
+    exit 1
+fi
+
+# Export under all names that tools (gh CLI, MCP servers, opencode) may read.
+export GH_TOKEN="${_active_token}"
+export GITHUB_TOKEN="${_active_token}"
+export GITHUB_PERSONAL_ACCESS_TOKEN="${_active_token}"
+
+# Validate the token is accepted by the API and check required scopes.
+# --include surfaces response headers; X-OAuth-Scopes lists granted scopes.
+# Use ||true to prevent set -e from exiting before we can capture/report the error.
+_api_response=$(gh api rate_limit --include 2>&1) || true
+if ! echo "${_api_response}" | grep -q '^HTTP'; then
+    echo "::error::gh CLI token validation failed — unexpected response:" >&2
+    echo "${_api_response}" >&2
+    exit 1
+fi
+echo "gh CLI token validation succeeded"
+
+if [[ -n "${GH_ORCHESTRATION_AGENT_TOKEN:-}" ]]; then
+    _granted_scopes=$(echo "${_api_response}" | grep -i '^X-OAuth-Scopes:' | sed 's/^[^:]*:[[:space:]]*//' | tr -d '\r')
+    echo "Granted OAuth scopes: ${_granted_scopes:-<none>}"
+
+    # Tokenize the comma-space delimited scope string into an array.
+    IFS=', ' read -ra _scope_tokens <<< "${_granted_scopes}"
+
+    _required_scopes=("repo" "workflow" "project" "read:org")
+    _missing=()
+    for _scope in "${_required_scopes[@]}"; do
+        _found=false
+        for _token in "${_scope_tokens[@]}"; do
+            [[ "${_token}" == "${_scope}" ]] && { _found=true; break; }
+        done
+        [[ "${_found}" == false ]] && _missing+=("${_scope}")
+    done
+
+    if [[ ${#_missing[@]} -gt 0 ]]; then
+        echo "::error::GH_ORCHESTRATION_AGENT_TOKEN is missing required scopes: ${_missing[*]}" >&2
+        echo "::error::Required: ${_required_scopes[*]}  |  Granted: ${_granted_scopes}" >&2
+        exit 1
+    fi
+    echo "All required scopes verified: ${_required_scopes[*]}"
 fi
 
 # Embed basic auth credentials into the attach URL if provided

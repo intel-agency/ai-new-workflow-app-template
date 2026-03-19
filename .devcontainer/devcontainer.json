@@ -7,10 +7,18 @@
   "remoteEnv": {
     "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}",
     "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:GITHUB_TOKEN}",
+    "GH_ORCHESTRATION_AGENT_TOKEN": "${localEnv:GH_ORCHESTRATION_AGENT_TOKEN}",
     "ZHIPU_API_KEY": "${localEnv:ZHIPU_API_KEY}",
     "KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY": "${localEnv:KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY}",
-    "GH_ORCHESTRATION_AGENT_TOKEN": "${localEnv:GH_ORCHESTRATION_AGENT_TOKEN}"
+    "OPENCODE_SERVER_HOSTNAME": "${localEnv:OPENCODE_SERVER_HOSTNAME}",
+    "OPENCODE_SERVER_PORT": "${localEnv:OPENCODE_SERVER_PORT}",
+    "OPENCODE_SERVER_USERNAME": "${localEnv:OPENCODE_SERVER_USERNAME}",
+    "OPENCODE_SERVER_PASSWORD": "${localEnv:OPENCODE_SERVER_PASSWORD}"
   },
+  "forwardPorts": [
+    4096
+  ],
+  "postStartCommand": "bash ./scripts/start-opencode-server.sh",
   "customizations": {
     "vscode": {
       "extensions": [

@@ -11,6 +11,7 @@
 		"github-actions.workflows.pinned.workflows": [
 			".github/workflows/orchestrator-agent.yml"
 		],
-		"python.analysis.typeCheckingMode": "off"
+		"python.analysis.typeCheckingMode": "off",
+		"markdown.validate.enabled": true
 	}
 }
