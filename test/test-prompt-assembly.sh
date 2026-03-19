@@ -41,7 +41,7 @@ Ref: refs/heads/main
 SHA: abc123def456"
 
   {
-    sed '/__EVENT_DATA__/,$ d' "$PROMPT_TEMPLATE"
+    sed '/{{__EVENT_DATA__}}/,$ d' "$PROMPT_TEMPLATE"
     echo "$EVENT_BLOCK"
     echo ""
     echo '```json'
@@ -85,9 +85,9 @@ for fixture in "$FIXTURES_DIR"/*.json; do
   # Assemble
   assemble_prompt "$fixture" "$event_name" "$output_file"
 
-  # Check: __EVENT_DATA__ placeholder is gone
-  check_result "no __EVENT_DATA__ placeholder" \
-    "! grep -q '__EVENT_DATA__' '$output_file'"
+  # Check: {{__EVENT_DATA__}} injection point placeholder is gone
+  check_result "no {{__EVENT_DATA__}} placeholder" \
+    "! grep -q '{{__EVENT_DATA__}}' '$output_file'"
 
   # Check: structured event block is present
   check_result "event name present" \

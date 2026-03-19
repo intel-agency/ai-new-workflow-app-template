@@ -198,6 +198,6 @@ Link to syntax of the event data: <https://docs.github.com/en/webhooks-and-event
 
 ---
 
-__EVENT_DATA__
+{{__EVENT_DATA__}}
 
 <!-- markdownlint-disable-file -->
