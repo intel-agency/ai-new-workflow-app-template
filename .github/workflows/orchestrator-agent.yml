@@ -96,9 +96,9 @@ jobs:
             sed '/{{__EVENT_DATA__}}/,$ d' "$PROMPT_TEMPLATE"
             echo "$EVENT_BLOCK"
             echo ""
-            echo '```json'
+            echo "\`\`\`json"
             echo "$EVENT_JSON"
-            echo '```'
+            echo "\`\`\`"
           } > "$ASSEMBLED_PROMPT"
 
           echo "::group::Assembled prompt diagnostics"
@@ -116,7 +116,7 @@ jobs:
           echo "  Helper Functions:  $(grep -c '## Helper Functions' "$ASSEMBLED_PROMPT" || echo 0)"
           echo "  Final section:     $(grep -c '## Final' "$ASSEMBLED_PROMPT" || echo 0)"
           echo "  Event Name line:   $(grep -c 'Event Name:' "$ASSEMBLED_PROMPT" || echo 0)"
-          echo "  JSON code block:   $(grep -c '^\`\`\`json' "$ASSEMBLED_PROMPT" || echo 0)"
+          echo "  JSON code block:   $(grep -c "^\`\`\`json" "$ASSEMBLED_PROMPT" || echo 0)"
           echo "  Injection leftover:$(grep -c '{{__EVENT_DATA__}}' "$ASSEMBLED_PROMPT" || echo 0)"
           echo "::endgroup::"
 
