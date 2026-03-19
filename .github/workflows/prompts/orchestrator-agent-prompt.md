@@ -83,4 +83,8 @@ Link to syntax of the event data: <https://docs.github.com/en/webhooks-and-event
 
 ---
 
-**EVENT_DATA**
+<!-- markdownlint-disable MD050 -->
+
+__EVENT_DATA__
+
+<!-- markdownlint-enable MD050 -->
