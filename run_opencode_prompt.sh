@@ -220,7 +220,8 @@ TAIL_PID=$!
 
 START_TIME=$(date +%s)
 IDLE_KILLED=0
-_prev_server_write=""  # tracks server process write_bytes between iterations
+_prev_server_write=""           # tracks server process write_bytes between iterations
+_last_server_io_time=$START_TIME  # last time server I/O was observed active
 
 # _read_server_write_bytes: read cumulative write_bytes from the server process.
 # Returns the value via stdout; empty string if unavailable.
@@ -261,11 +262,12 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
     if [[ -n "$_cur_server_write" ]]; then
         if [[ -n "$_prev_server_write" && "$_cur_server_write" != "$_prev_server_write" ]]; then
             server_io_active=true
+            _last_server_io_time=$now
         fi
         _prev_server_write="$_cur_server_write"
     fi
 
-    # Server log mtime as a secondary signal
+    # Server log mtime as a secondary signal (only relevant when /proc/io unavailable)
     if [[ -f "$SERVER_LOG" ]]; then
         server_last_mod=$(stat -c %Y "$SERVER_LOG" 2>/dev/null || echo "$now")
         server_log_idle=$(( now - server_last_mod ))
@@ -273,17 +275,25 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
         server_log_idle=$output_idle
     fi
 
-    # Determine effective idle time.
-    # If the server process is actively performing I/O, it is NOT idle
-    # regardless of log file staleness.
+    # Determine effective server idle time.
+    # Use time-since-last-I/O-activity as the primary measure. This avoids
+    # the race condition where a single 30s I/O pause causes server_idle to
+    # jump from 0 to the full runtime (because server_log_idle reflects
+    # server startup, not last activity). Only fall back to server_log_idle
+    # when /proc/io was never available (e.g. non-Linux or PID file missing).
     if [[ "$server_io_active" == true ]]; then
         server_idle=0
+    elif [[ -n "$_cur_server_write" ]]; then
+        # /proc/io is available but write_bytes didn't change this interval.
+        # Compute idle from when I/O was LAST seen active — not from startup.
+        server_idle=$(( now - _last_server_io_time ))
     else
+        # /proc/io not available at all — fall back to log mtime
         server_idle=$server_log_idle
     fi
 
     # The process is only truly idle when BOTH client output is stale
-    # AND the server shows no activity (no I/O and no log writes).
+    # AND the server shows no activity.
     if [[ $output_idle -le $server_idle ]]; then
         idle=$output_idle
     else
@@ -291,7 +301,7 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
     fi
 
     if [[ "${DEBUG_ORCHESTRATOR:-}" == "true" ]]; then
-        echo "[watchdog] elapsed=${elapsed}s output_idle=${output_idle}s server_log_idle=${server_log_idle}s server_io_active=${server_io_active} effective_idle=${idle}s log_size=${log_size}b log_lines=${log_lines} pid=$OPENCODE_PID server_write_bytes=${_cur_server_write:-n/a}"
+        echo "[watchdog] elapsed=${elapsed}s output_idle=${output_idle}s server_idle=${server_idle}s server_io_active=${server_io_active} effective_idle=${idle}s log_size=${log_size}b log_lines=${log_lines} pid=$OPENCODE_PID server_write_bytes=${_cur_server_write:-n/a} last_io=$(( now - _last_server_io_time ))s_ago"
     elif [[ $output_idle -ge 60 && "$server_io_active" == true ]]; then
         # Emit a brief note when client output is stale but server is active
         # (i.e. subagent delegation in progress) so CI isn't silent for minutes
