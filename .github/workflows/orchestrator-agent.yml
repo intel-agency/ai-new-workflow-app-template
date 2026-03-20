@@ -7,7 +7,7 @@ on:
     types: [created, edited]
   workflow_run:    
     types: [completed]
-    workflows: ["Publish Docker", "Pre-build dev container image", "orchestrator-agent"]  
+    workflows: ["Publish Docker", "Pre-build dev container image"]  
   # pull_request_review_comment:
   #   types: [created, edited]
   # pull_request_review:
