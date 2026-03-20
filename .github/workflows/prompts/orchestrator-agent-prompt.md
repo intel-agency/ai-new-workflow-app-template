@@ -133,6 +133,16 @@ case (type = issues &&
             - if the workflow fails, leave the issue open and comment with details about the failure and potential next steps.
        }
 
+case (type = workflow_run &&
+        workflow.name = "Pre-build dev container image" &&
+        branch = dynamic-project-setup &&
+        status = completed &&
+        conclusion = success)
+        {
+            - /orchestrate-dynamic-workflow
+                $workflow_name = project-setup
+        }
+
 case (default)
       {
         - print the contents of your EVENT_DATA with a message stating no match was found so execution fell through to the
