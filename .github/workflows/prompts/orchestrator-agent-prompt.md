@@ -139,8 +139,8 @@ case (type = workflow_run &&
         status = completed &&
         conclusion = success)
         {
-            - /orchestrate-dynamic-workflow
-                $workflow_name = project-setup
+          - /orchestrate-dynamic-workflow
+              $workflow_name = project-setup
         }
 
 case (default)
@@ -151,7 +151,7 @@ case (default)
 
 ## Final
 
-- Say goodbye! and finish execution.
+  - Say goodbye! and finish execution.
 
 ## EVENT_DATA
 
