@@ -33,7 +33,7 @@ jobs:
       pull-requests: write
       issues: write
       packages: read
-      projects: write
+      repository-projects: write
     env:
       # Secrets must be available at job level so they're present during
       # 'devcontainer up' — the postStartCommand launches the opencode server
