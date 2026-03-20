@@ -102,3 +102,349 @@ Step 13 "Execute orchestrator agent in devcontainer" started at `07:02:12Z` and 
 <https://github.com/intel-agency/workflow-orchestration-queue-golf43/actions/runs/23332549552/job/67866999506>
 
 <https://github.com/intel-agency/workflow-orchestration-queue-delta86/actions/runs/23332933790/job/67868109799>
+
+## P5: Agent-instructions-expert running forever in india42
+
+<https://github.com/intel-agency/workflow-orchestration-queue-india42>
+
+First delegation in `orchestra7tion-agent.yml` runs forever. Some kind of race condition.
+
+<https://github.com/intel-agency/workflow-orchestration-queue-india42/actions/runs/23340845917/job/67893872608#logs>:
+
+```
+orchestrate
+succeeded 8 minutes ago in 16m 35s
+Search logs
+1s
+1s
+0s
+0s
+1s
+20s
+0s
+1s
+4s
+1s
+0s
+0s
+16m 2s
+Fri, 20 Mar 2026 11:29:22 GMT
+Run echo "::notice::Executing orchestrator agent with prompt: $ORCHESTRATOR_PROMPT_PATH"
+Fri, 20 Mar 2026 11:29:22 GMT
+Notice: Executing orchestrator agent with prompt: .assembled-orchestrator-prompt.md
+Fri, 20 Mar 2026 11:29:22 GMT
+Prompt file size: 35850 bytes
+Fri, 20 Mar 2026 11:29:22 GMT
+devcontainer-opencode.sh prompt -f .assembled-orchestrator-prompt.md
+Fri, 20 Mar 2026 11:29:22 GMT
+---
+Fri, 20 Mar 2026 11:29:22 GMT
+Using GH_ORCHESTRATION_AGENT_TOKEN for authentication (cross-repo access enabled)
+Fri, 20 Mar 2026 11:29:23 GMT
+gh CLI token validation succeeded
+Fri, 20 Mar 2026 11:29:23 GMT
+Granted OAuth scopes: project, read:org, repo, workflow
+Fri, 20 Mar 2026 11:29:23 GMT
+All required scopes verified: repo workflow project read:org
+Fri, 20 Mar 2026 11:29:23 GMT
+Prompt: 35849 chars | attach: http://127.0.0.1:4096 | log-level: INFO
+Fri, 20 Mar 2026 11:29:23 GMT
+Starting opencode at 2026-03-20T11:29:22Z
+Fri, 20 Mar 2026 11:29:23 GMT
+Output log: /tmp/opencode-output.xM631F
+Fri, 20 Mar 2026 11:29:23 GMT
+Server log: /tmp/opencode-serve.log
+Fri, 20 Mar 2026 11:29:23 GMT
+Server PID file: /tmp/opencode-serve.pid (monitored for process I/O activity)
+Fri, 20 Mar 2026 11:29:23 GMT
+Launching: opencode run --model zai-coding-plan/glm-5 --agent orchestrator --log-level INFO --thinking --print-logs --attach http://127.0.0.1:4096 <prompt>
+Fri, 20 Mar 2026 11:29:23 GMT
+opencode PID: 228
+Fri, 20 Mar 2026 11:29:24 GMT
+opencode process 228 confirmed running after 1s
+Fri, 20 Mar 2026 11:29:24 GMT
+INFO  2026-03-20T11:29:23 +299ms service=default version=1.2.24 args=["run","--model","zai-coding-plan/glm-5","--agent","orchestrator","--log-level","INFO","--thinking","--print-logs","--attach","http://127.0.0.1:4096","# Orchestrator Agent Prompt\n\n\n\n## Instructions\n\nYou are an Orchestrator Agent, responsible for managing and coordinating the execution of tasks across multiple agents. Your primary goal is to ensure that tasks are completed efficiently and effectively, while maintaining clear communication with all agents involved.\n\nYou act based on the GitHub workflow trigger event which initiated this workflow. It is serialized to a JSON string, which has been appended to the end of this prompt in the __EVENT_DATA__ section. Based on its content, you will branch your logic based on the following instructions...\n\nBefore proceeding, first say \"Hello, I am the Orchestrator Agent. I will analyze the event data and determine the appropriate workflow to execute based on the defined branching logic.\" an
+Fri, 20 Mar 2026 11:29:25 GMT
+
+Fri, 20 Mar 2026 11:29:25 GMT
+> orchestrator · glm-5
+Fri, 20 Mar 2026 11:29:25 GMT
+
+Fri, 20 Mar 2026 11:30:09 GMT
+• Execute project-setup workflow Agent-Instructions-Expert Agent
+Fri, 20 Mar 2026 11:30:09 GMT
+Thinking: The user has provided me with the Orchestrator Agent Prompt with the EVENT_DATA section. Let me analyze this according to the branching logic.
+Fri, 20 Mar 2026 11:30:09 GMT
+First, let me identify the key values from the EVENT_DATA:
+Fri, 20 Mar 2026 11:30:09 GMT
+- Event Name: workflow_run
+Fri, 20 Mar 2026 11:30:09 GMT
+- Action: completed
+Fri, 20 Mar 2026 11:30:09 GMT
+- Workflow name: "Pre-build dev container image"
+Fri, 20 Mar 2026 11:30:09 GMT
+- Branch: main (refs/heads/main)
+Fri, 20 Mar 2026 11:30:09 GMT
+- Status: completed
+Fri, 20 Mar 2026 11:30:09 GMT
+- Conclusion: success
+Fri, 20 Mar 2026 11:30:09 GMT
+Now let me check the match clause cases:
+Fri, 20 Mar 2026 11:30:09 GMT
+1. First case: type = issues && action = labeled && labels contains "implementation:ready" && title contains "Complete Implementation (Application Plan)"
+Fri, 20 Mar 2026 11:30:09 GMT
+   - Not a match - this is a workflow_run event, not issues
+Fri, 20 Mar 2026 11:30:09 GMT
+2. Second case: type = issues && action = labeled && labels contains "implementation:ready" && title contains "Epic"
+Fri, 20 Mar 2026 11:30:09 GMT
+   - Not a match - this is a workflow_run event, not issues
+Fri, 20 Mar 2026 11:30:09 GMT
+3. Third case: type = issues && action = labeled && labels contains "implementation:complete" && title contains "Epic"
+Fri, 20 Mar 2026 11:30:09 GMT
+   - Not a match - this is a workflow_run event, not issues
+Fri, 20 Mar 2026 11:30:09 GMT
+4. Fourth case: type = issues && action = opened && title contains "orchestrate-dynamic-workflow"
+Fri, 20 Mar 2026 11:30:09 GMT
+   - Not a match - this is a workflow_run event, not issues
+Fri, 20 Mar 2026 11:30:09 GMT
+5. Fifth case: type = workflow_run && workflow.name = "Pre-build dev container image" && branch = main && status = completed && conclusion = success
+Fri, 20 Mar 2026 11:30:09 GMT
+   - Let me check:
+Fri, 20 Mar 2026 11:30:09 GMT
+   - type = workflow_run ✓ (Event Name is workflow_run)
+Fri, 20 Mar 2026 11:30:09 GMT
+   - workflow.name = "Pre-build dev container image" ✓
+Fri, 20 Mar 2026 11:30:09 GMT
+   - branch = main ✓ (Ref: refs/heads/main)
+Fri, 20 Mar 2026 11:30:09 GMT
+   - status = completed ✓
+Fri, 20 Mar 2026 11:30:09 GMT
+   - conclusion = success ✓
+Fri, 20 Mar 2026 11:30:09 GMT
+   
+Fri, 20 Mar 2026 11:30:09 GMT
+   This is a MATCH!
+Fri, 20 Mar 2026 11:30:09 GMT
+So I need to execute:
+Fri, 20 Mar 2026 11:30:09 GMT
+- /orchestrate-dynamic-workflow
+Fri, 20 Mar 2026 11:30:09 GMT
+    $workflow_name = project-setup
+Fri, 20 Mar 2026 11:30:09 GMT
+But first, I need to say hello and print the content of the EVENT_DATA section. Then I need to check for test/debug modes - I don't see any "test" or "debug" labels or keywords in the event data.
+Fri, 20 Mar 2026 11:30:09 GMT
+Let me proceed with the matching clause logic.
+Fri, 20 Mar 2026 11:30:09 GMT
+Hello, I am the Orchestrator Agent. I will analyze the event data and determine the appropriate workflow to execute based on the defined branching logic.
+Fri, 20 Mar 2026 11:30:09 GMT
+---
+Fri, 20 Mar 2026 11:30:09 GMT
+## EVENT_DATA Content
+Fri, 20 Mar 2026 11:30:09 GMT
+```
+
+Fri, 20 Mar 2026 11:30:09 GMT
+Event Name: workflow_run
+Fri, 20 Mar 2026 11:30:09 GMT
+Action: completed
+Fri, 20 Mar 2026 11:30:09 GMT
+Actor: nam20485
+Fri, 20 Mar 2026 11:30:09 GMT
+Repository: intel-agency/workflow-orchestration-queue-india42
+Fri, 20 Mar 2026 11:30:09 GMT
+Ref: refs/heads/main
+Fri, 20 Mar 2026 11:30:09 GMT
+SHA: 97a3ca6ba257fbc2ac3766ec1e2ad5664944c17c
+Fri, 20 Mar 2026 11:30:09 GMT
+
+```
+Fri, 20 Mar 2026 11:30:09 GMT
+**Workflow Details:**
+Fri, 20 Mar 2026 11:30:09 GMT
+- Workflow Name: "Pre-build dev container image"
+Fri, 20 Mar 2026 11:30:09 GMT
+- Status: completed
+Fri, 20 Mar 2026 11:30:09 GMT
+- Conclusion: success
+Fri, 20 Mar 2026 11:30:09 GMT
+- Branch: main
+Fri, 20 Mar 2026 11:30:09 GMT
+---
+Fri, 20 Mar 2026 11:30:09 GMT
+## Branching Logic Analysis
+Fri, 20 Mar 2026 11:30:09 GMT
+Checking match clauses in order:
+Fri, 20 Mar 2026 11:30:09 GMT
+1. ❌ `type = issues && action = labeled && labels contains "implementation:ready" && title contains "Complete Implementation (Application Plan)"` — Not a match (event type is `workflow_run`, not `issues`)
+Fri, 20 Mar 2026 11:30:09 GMT
+2. ❌ `type = issues && action = labeled && labels contains "implementation:ready" && title contains "Epic"` — Not a match (event type is `workflow_run`, not `issues`)
+Fri, 20 Mar 2026 11:30:09 GMT
+3. ❌ `type = issues && action = labeled && labels contains "implementation:complete" && title contains "Epic"` — Not a match (event type is `workflow_run`, not `issues`)
+Fri, 20 Mar 2026 11:30:09 GMT
+4. ❌ `type = issues && action = opened && title contains "orchestrate-dynamic-workflow"` — Not a match (event type is `workflow_run`, not `issues`)
+Fri, 20 Mar 2026 11:30:09 GMT
+5. ✅ **MATCH FOUND!** 
+Fri, 20 Mar 2026 11:30:09 GMT
+   - `type = workflow_run` ✓
+Fri, 20 Mar 2026 11:30:09 GMT
+   - `workflow.name = "Pre-build dev container image"` ✓
+Fri, 20 Mar 2026 11:30:09 GMT
+   - `branch = main` ✓
+Fri, 20 Mar 2026 11:30:09 GMT
+   - `status = completed` ✓
+Fri, 20 Mar 2026 11:30:09 GMT
+   - `conclusion = success` ✓
+Fri, 20 Mar 2026 11:30:09 GMT
+---
+Fri, 20 Mar 2026 11:30:09 GMT
+## Executing Matched Clause Logic
+Fri, 20 Mar 2026 11:30:09 GMT
+The dev container pre-build workflow has completed successfully on the main branch. This indicates the repository infrastructure is ready. I will now execute the `project-setup` dynamic workflow.
+Fri, 20 Mar 2026 11:30:09 GMT
+**Action:** `/orchestrate-dynamic-workflow`
+Fri, 20 Mar 2026 11:30:09 GMT
+- `$workflow_name = project-setup`
+Fri, 20 Mar 2026 11:30:09 GMT
+Let me delegate this to the agent-instructions-expert to execute the dynamic workflow:
+Fri, 20 Mar 2026 11:31:24 GMT
+[watchdog] client output idle 75s, server I/O active (write_bytes=74952704) — subagent likely running
+Fri, 20 Mar 2026 11:31:54 GMT
+[watchdog] client output idle 105s, server I/O active (write_bytes=75337728) — subagent likely running
+Fri, 20 Mar 2026 11:32:13 GMT
+[watchdog] client output idle 135s, server I/O active (write_bytes=76111872) — subagent likely running
+Fri, 20 Mar 2026 11:32:43 GMT
+[watchdog] client output idle 165s, server I/O active (write_bytes=76603392) — subagent likely running
+Fri, 20 Mar 2026 11:33:13 GMT
+[watchdog] client output idle 195s, server I/O active (write_bytes=77041664) — subagent likely running
+Fri, 20 Mar 2026 11:33:43 GMT
+[watchdog] client output idle 225s, server I/O active (write_bytes=77287424) — subagent likely running
+Fri, 20 Mar 2026 11:35:13 GMT
+[watchdog] client output idle 315s, server I/O active (write_bytes=77996032) — subagent likely running
+Fri, 20 Mar 2026 11:35:43 GMT
+[watchdog] client output idle 345s, server I/O active (write_bytes=78761984) — subagent likely running
+Fri, 20 Mar 2026 11:36:14 GMT
+[watchdog] client output idle 375s, server I/O active (write_bytes=79355904) — subagent likely running
+Fri, 20 Mar 2026 11:36:44 GMT
+[watchdog] client output idle 406s, server I/O active (write_bytes=80306176) — subagent likely running
+Fri, 20 Mar 2026 11:37:44 GMT
+[watchdog] client output idle 466s, server I/O active (write_bytes=80625664) — subagent likely running
+Fri, 20 Mar 2026 11:38:44 GMT
+[watchdog] client output idle 526s, server I/O active (write_bytes=80973824) — subagent likely running
+Fri, 20 Mar 2026 11:39:14 GMT
+[watchdog] client output idle 556s, server I/O active (write_bytes=81317888) — subagent likely running
+Fri, 20 Mar 2026 11:39:44 GMT
+[watchdog] client output idle 586s, server I/O active (write_bytes=81580032) — subagent likely running
+Fri, 20 Mar 2026 11:40:14 GMT
+[watchdog] client output idle 616s, server I/O active (write_bytes=144310272) — subagent likely running
+Fri, 20 Mar 2026 11:41:44 GMT
+[watchdog] client output idle 706s, server I/O active (write_bytes=144920576) — subagent likely running
+Fri, 20 Mar 2026 11:43:44 GMT
+[watchdog] client output idle 826s, server I/O active (write_bytes=145567744) — subagent likely running
+Fri, 20 Mar 2026 11:44:44 GMT
+[watchdog] client output idle 886s, server I/O active (write_bytes=146317312) — subagent likely running
+Fri, 20 Mar 2026 11:45:14 GMT
+Warning: opencode idle for 15m (no output from client or server); terminating
+Fri, 20 Mar 2026 11:45:14 GMT
+opencode exit code: 143
+Fri, 20 Mar 2026 11:45:14 GMT
+=== server log tail (last 80 lines before idle kill) ===
+Fri, 20 Mar 2026 11:45:14 GMT
+Performing one time database migration, may take a few minutes...
+Fri, 20 Mar 2026 11:45:14 GMT
+sqlite-migration:done
+Fri, 20 Mar 2026 11:45:14 GMT
+Database migration complete.
+Fri, 20 Mar 2026 11:45:14 GMT
+Warning: OPENCODE_SERVER_PASSWORD is not set; server is unsecured.
+Fri, 20 Mar 2026 11:45:14 GMT
+opencode server listening on http://0.0.0.0:4096
+Fri, 20 Mar 2026 11:45:14 GMT
+=== end server log tail ===
+Fri, 20 Mar 2026 11:45:14 GMT
+---
+Fri, 20 Mar 2026 11:45:14 GMT
+Notice: devcontainer-opencode.sh exited with code: 0
+0s
+0s
+Fri, 20 Mar 2026 11:45:14 GMT
+Post job cleanup.
+Fri, 20 Mar 2026 11:45:14 GMT
+/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/workflow-orchestration-queue-india42/workflow-orchestration-queue-india42 --files-from manifest.txt --use-compress-program zstdmt
+Fri, 20 Mar 2026 11:45:14 GMT
+Failed to save: Unable to reserve cache with key devcontainer-cli-Linux-0.84.1, another job may be creating this cache.
+0s
+Fri, 20 Mar 2026 11:45:14 GMT
+Post job cleanup.
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/docker logout ghcr.io
+Fri, 20 Mar 2026 11:45:16 GMT
+Removing login credentials for ghcr.io
+Fri, 20 Mar 2026 11:45:16 GMT
+Post cache
+0s
+Fri, 20 Mar 2026 11:45:16 GMT
+Post job cleanup.
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git version
+Fri, 20 Mar 2026 11:45:16 GMT
+git version 2.53.0
+Fri, 20 Mar 2026 11:45:16 GMT
+Temporarily overriding HOME='/home/runner/work/_temp/718c2f17-9f83-43e4-ae1e-3861f0c85b56' before making global git config changes
+Fri, 20 Mar 2026 11:45:16 GMT
+Adding repository directory to the temporary git global config as a safe directory
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --global --add safe.directory /home/runner/work/workflow-orchestration-queue-india42/workflow-orchestration-queue-india42
+Fri, 20 Mar 2026 11:45:16 GMT
+Removing SSH command configuration
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Fri, 20 Mar 2026 11:45:16 GMT
+Removing HTTP extra header
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Fri, 20 Mar 2026 11:45:16 GMT
+Removing includeIf entries pointing to credentials config files
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Fri, 20 Mar 2026 11:45:16 GMT
+includeif.gitdir:/home/runner/work/workflow-orchestration-queue-india42/workflow-orchestration-queue-india42/.git.path
+Fri, 20 Mar 2026 11:45:16 GMT
+includeif.gitdir:/home/runner/work/workflow-orchestration-queue-india42/workflow-orchestration-queue-india42/.git/worktrees/*.path
+Fri, 20 Mar 2026 11:45:16 GMT
+includeif.gitdir:/github/workspace/.git.path
+Fri, 20 Mar 2026 11:45:16 GMT
+includeif.gitdir:/github/workspace/.git/worktrees/*.path
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/workflow-orchestration-queue-india42/workflow-orchestration-queue-india42/.git.path
+Fri, 20 Mar 2026 11:45:16 GMT
+/home/runner/work/_temp/git-credentials-4409379a-d75a-4104-961b-ff73c47451cf.config
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/workflow-orchestration-queue-india42/workflow-orchestration-queue-india42/.git.path /home/runner/work/_temp/git-credentials-4409379a-d75a-4104-961b-ff73c47451cf.config
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/workflow-orchestration-queue-india42/workflow-orchestration-queue-india42/.git/worktrees/*.path
+Fri, 20 Mar 2026 11:45:16 GMT
+/home/runner/work/_temp/git-credentials-4409379a-d75a-4104-961b-ff73c47451cf.config
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/workflow-orchestration-queue-india42/workflow-orchestration-queue-india42/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-4409379a-d75a-4104-961b-ff73c47451cf.config
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+Fri, 20 Mar 2026 11:45:16 GMT
+/github/runner_temp/git-credentials-4409379a-d75a-4104-961b-ff73c47451cf.config
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-4409379a-d75a-4104-961b-ff73c47451cf.config
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+Fri, 20 Mar 2026 11:45:16 GMT
+/github/runner_temp/git-credentials-4409379a-d75a-4104-961b-ff73c47451cf.config
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-4409379a-d75a-4104-961b-ff73c47451cf.config
+Fri, 20 Mar 2026 11:45:16 GMT
+/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Fri, 20 Mar 2026 11:45:16 GMT
+Removing credentials config '/home/runner/work/_temp/git-credentials-4409379a-d75a-4104-961b-ff73c47451cf.config'
+0s
+```
