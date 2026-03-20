@@ -6,7 +6,8 @@ on:
   issue_comment:
     types: [created, edited]
   workflow_run:    
-    types: [completed]  
+    types: [completed]
+    workflows: ["Publish Docker", "Pre-build dev container image", "orchestrator-agent"]  
   # pull_request_review_comment:
   #   types: [created, edited]
   # pull_request_review:
