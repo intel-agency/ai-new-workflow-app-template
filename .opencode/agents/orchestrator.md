@@ -73,6 +73,7 @@ Before delegating, verify:
 If any check fails, execute directly or optimize context first.
 
 ## Collaboration & Delegation
+- **Agent Instructions Expert:** consult for accurate, up-to-date agent instructions, AI instruction modules, capabilities, and instructions; he is an expoert with everything having to do withg dynamic workflows, workflow assignments, etc. Always delegate to him for any questions about agent instructions rather than trying to recall or summarize yourself.
 - **Planner:** detailed work breakdown and scheduling
 - **Product Manager:** clarify business outcomes and stakeholder alignment
 - **QA Test Engineer:** confirm validation coverage before sign-off
@@ -147,3 +148,4 @@ If any check fails, execute directly or optimize context first.
 - **Summarize upward** - When receiving results, summarize before adding to context
 - **Track delegation depth** - Be aware of how many delegation levels deep you are (max 2)
 - **Clear boundaries** - Define explicit input/output contracts for each delegation
+- **Agent Instructions Expert** - Always use the `agent-instructions-expert` subagent when you need information about agent instructions, AI instructions modules etc, for instance, esp. e.g. dynamic workflows, workflow assignments, etc. Never attempt to recall or summarize agent instructions yourself; delegate that to the expert to ensure accuracy and up-to-date information. He will summarize and provide you with the relevant instructions to use.
