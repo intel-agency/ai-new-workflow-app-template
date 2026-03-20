@@ -2,7 +2,7 @@
 
 ## P1: 2 subagent delegation concurrent artificial limit
 
-**Status: FIXED** (commit `bc4126c`)
+**Status: FIXED** (commit `bc4126c`) — validated in delta86 logs, model still echoes old behavior on pre-fix repos
 
 **Root Cause:** The orchestrator agent was explicitly told to limit concurrent delegations to 2 in three places:
 1. `.opencode/agents/orchestrator.md` step 5: `Build delegation tree (≤2 concurrent)`
@@ -12,6 +12,8 @@
 This is a prompt-level constraint only — opencode supports parallel Task tool calls natively with no hard limit. The model was obeying the instruction literally, serializing independent tasks unnecessarily.
 
 **Fix:** Removed all three concurrent-limit references. The depth limit (max 2 nesting levels) is preserved since that's about nesting, not parallelism.
+
+**Log validation (delta86):** At `07:22:55Z` the orchestrator still says "I can delegate up to 2 tasks concurrently" — this is expected because delta86 was seeded from the template BEFORE the P1 fix. New repos created from the updated template will not have this constraint.
 
 ```
 Let me delegate these tasks. I'll start with the high-priority items. I can delegate up to 2 tasks concurrently.
@@ -61,13 +63,41 @@ Now executing **Assignment 3: create-project-structure**. This requires Python a
 
 ## P4: /orchestrate-project-setup timeout and completion issues
 
-**Status: INVESTIGATING**
+**Status: PARTIALLY FIXED** — `--thinking` + `/proc/io` watchdog fixes prevent false-positive kills during subagent work; genuine subagent stalls still cause 15m idle kill
 
-The golf43 run has been running 46+ minutes (still in progress — the `--thinking` and `/proc/io` watchdog fixes from commit `5e591f9` are keeping it alive). The delta86 run **succeeded** in 26m 14s.
+### Delta86 analysis (run 23332933790 — succeeded in 26m 14s)
 
-The `--thinking` flag fix ensures the client streams thinking blocks to stdout during subagent delegations, preventing the idle watchdog from killing the process. The `/proc/io` monitoring provides a server-side fallback. Both are working as evidenced by the golf43 watchdog log: `server I/O active (write_bytes=...)`.
+**Timeline (UTC, 2026-03-20):**
 
-Remaining concern: even when not killed by the watchdog, runs may take too long if the orchestrator is serializing work unnecessarily (see P1 fix) or if subagent tasks are too broad/unfocused.
+| Time | Event |
+|------|-------|
+| 07:17:19 | opencode starts with `--thinking --print-logs` flags |
+| 07:18:16 | Orchestrator matches `project-setup` clause, delegates to Planner Agent |
+| 07:19:20–07:22:20 | **Watchdog: "server I/O active (write_bytes=...)" — fix working, no kill** |
+| 07:22:25 | ✔ Planner Agent completes (~4m subagent run survived) |
+| 07:23:35 | Delegates Developer + Github-Expert concurrently (2 tasks) |
+| 07:24:50 | Watchdog: server I/O active |
+| 07:24:56 | ✔ Github-Expert: "GITHUB_TOKEN doesn't have permission to create projects" (confirms P2) |
+| 07:24:59 | ✔ Developer: labels.json updated |
+| 07:25:47 | Delegates Import-labels + Create-milestones concurrently |
+| 07:27:27 | ✔ Milestones complete |
+| 07:27:27–07:42:51 | **Import-labels subagent STALLS — no server I/O for 15 minutes** |
+| 07:42:51 | ⚠ "opencode idle for 15m (no output from client or server); terminating" |
+| 07:42:51 | opencode exit code: 143 (SIGTERM) — wrapper returns exit 0 |
+
+**Validated fixes:**
+- `--thinking` flag streams thinking blocks during subagent work → prevents idle-output false positives
+- `/proc/<pid>/io` monitoring detects server write_bytes changes → proves subagent is alive even when no client output
+- 5 of 6 subagent delegations completed successfully without watchdog interference
+
+**Remaining issues:**
+1. **Import-labels subagent genuine stall:** For 15m after milestones completed, zero server I/O — the LLM API call or `gh` CLI command within the subagent hung. This is NOT a false-positive watchdog kill; the subagent actually froze.
+2. **Exit code masking:** Wrapper returns 0 even when watchdog sends SIGTERM (exit 143). The workflow appears "succeeded" despite incomplete work (import-labels never finished).
+3. **Incomplete task list:** Milestones done, labels.json updated, but: import-labels incomplete, Phase 1 issues not created, final status not reported.
+
+### Golf43 analysis (run 23332549552 — still in_progress at 1h+)
+
+Step 13 "Execute orchestrator agent in devcontainer" started at `07:02:12Z` and is still running. Cannot fetch logs from in-progress runs via `gh run view --log`. Either the orchestrator is processing many tasks successfully (fix keeping it alive), or it's stuck but the hard ceiling (90m) hasn't been hit yet.
 
 <https://github.com/intel-agency/workflow-orchestration-queue-golf43/actions/runs/23332549552/job/67866999506>
 
