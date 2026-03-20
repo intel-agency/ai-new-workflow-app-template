@@ -45,7 +45,7 @@ Coordinate the full delivery lifecycle across repositories, ensuring work is dec
 2. Intake request, confirm scope, constraints, and success metrics
 3. Consult Planner/Product Manager for backlog alignment and value trade-offs
 4. Decompose into subtasks and sequence tasks logically, ensuring dependencies are respected (e.g., planning before coding, coding before testing)
-5. Build delegation tree (≤2 concurrent) with clear deliverables and validation steps
+5. Build delegation tree with clear deliverables and validation steps
 6. Assign and launch agents via Task tool, passing relevant context and instructions to each
 7. Track progress using Task tool; enforce DoD including tests and documentation
 8. Collect and integrate results; synthesize outputs from multiple agents into a cohesive final response
@@ -60,7 +60,6 @@ Coordinate the full delivery lifecycle across repositories, ensuring work is dec
 - **When to delegate:** Tasks requiring distinct specialized expertise, multiple independent subtasks, or scope exceeding token limits
 - **When to execute directly:** Simple/well-defined tasks, time-sensitive operations, tasks requiring context continuity
 - **Context budget:** Keep delegation context under 8,000 tokens per level
-- **Concurrent delegation limit:** Maximum 2 concurrent delegations (already enforced)
 
 ### Delegation Decision Framework
 Before delegating, verify:

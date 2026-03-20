@@ -140,7 +140,7 @@ scope: repository
     <rule>Keep changes minimal and targeted.</rule>
     <rule>Do not hardcode secrets/tokens.</rule>
     <rule>Preserve the `__EVENT_DATA__` placeholder in `orchestrator-agent-prompt.md`.</rule>
-    <rule>Keep orchestrator delegation-depth ≤2 and "never write code directly" constraint.</rule>
+    <rule>Keep orchestrator delegation-depth ≤2 levels and "never write code directly" constraint. No limit on concurrent delegations.</rule>
     <rule>Pin action versions by SHA in workflow files.</rule>
     <rule>Never add duplicate top-level `name:`, `on:`, or `jobs:` keys in workflow YAML.</rule>
     <rule>`.opencode/` is checked out by `actions/checkout`; do not COPY it in the Dockerfile.</rule>
