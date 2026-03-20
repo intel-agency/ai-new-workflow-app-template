@@ -173,10 +173,18 @@ echo "Starting opencode at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 # An active agent continuously emits tool calls, reasoning, etc. Sustained silence
 # means it's stuck. This replaces a hard wall-clock timeout so long-running but
 # actively-working agents aren't killed prematurely.
+#
+# IMPORTANT: When the orchestrator delegates to a subagent via the Task tool,
+# the `opencode run` client blocks silently waiting for the server-side subagent
+# to finish. During this time the client produces NO stdout, but the server log
+# IS actively written. We monitor BOTH logs and only consider the process idle
+# when neither has been modified within the timeout window.
 IDLE_TIMEOUT_SECS=900   # 15 minutes of no output
 HARD_CEILING_SECS=5400  # 90-minute absolute safety net
 OUTPUT_LOG=$(mktemp /tmp/opencode-output.XXXXXX)
+SERVER_LOG="${OPENCODE_SERVER_LOG:-/tmp/opencode-serve.log}"
 echo "Output log: $OUTPUT_LOG"
+echo "Server log: $SERVER_LOG (monitored for subagent activity)"
 
 set +e
 
@@ -213,13 +221,35 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
     now=$(date +%s)
     elapsed=$(( now - START_TIME ))
 
-    # Watchdog status — concise by default, verbose when debugging
+    # Watchdog status — concise by default, verbose when debugging.
+    # Check both the client output log and the server log. During subagent
+    # delegation the client is silent but the server log keeps updating.
     log_size=$(wc -c < "$OUTPUT_LOG" 2>/dev/null || echo 0)
     log_lines=$(wc -l < "$OUTPUT_LOG" 2>/dev/null || echo 0)
-    last_mod=$(stat -c %Y "$OUTPUT_LOG" 2>/dev/null || echo "$now")
-    idle=$(( now - last_mod ))
+    output_last_mod=$(stat -c %Y "$OUTPUT_LOG" 2>/dev/null || echo "$now")
+    output_idle=$(( now - output_last_mod ))
+
+    # Server log may not exist if opencode is running in local (non-attach) mode
+    if [[ -f "$SERVER_LOG" ]]; then
+        server_last_mod=$(stat -c %Y "$SERVER_LOG" 2>/dev/null || echo "$now")
+        server_idle=$(( now - server_last_mod ))
+    else
+        server_idle=$output_idle  # fall back to output-only monitoring
+    fi
+
+    # The process is only truly idle when BOTH logs are stale
+    if [[ $output_idle -le $server_idle ]]; then
+        idle=$output_idle
+    else
+        idle=$server_idle
+    fi
+
     if [[ "${DEBUG_ORCHESTRATOR:-}" == "true" ]]; then
-        echo "[watchdog] elapsed=${elapsed}s idle=${idle}s log_size=${log_size}b log_lines=${log_lines} pid=$OPENCODE_PID"
+        echo "[watchdog] elapsed=${elapsed}s output_idle=${output_idle}s server_idle=${server_idle}s effective_idle=${idle}s log_size=${log_size}b log_lines=${log_lines} pid=$OPENCODE_PID"
+    elif [[ $output_idle -ge 60 && $server_idle -lt $output_idle ]]; then
+        # Emit a brief note when client output is stale but server is active
+        # (i.e. subagent delegation in progress) so CI isn't silent for minutes
+        echo "[watchdog] client output idle ${output_idle}s, server active (idle ${server_idle}s) — subagent likely running"
     fi
 
     if [[ $elapsed -ge $HARD_CEILING_SECS ]]; then
@@ -230,10 +260,10 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
         break
     fi
 
-    # Idle detection: check last modification time of the output log
+    # Idle detection: only trigger when BOTH client output and server log are stale
     if [[ $idle -ge $IDLE_TIMEOUT_SECS ]]; then
         echo ""
-        echo "::warning::opencode idle for $(( idle / 60 ))m (no output); terminating"
+        echo "::warning::opencode idle for $(( idle / 60 ))m (no output from client or server); terminating"
         kill "$OPENCODE_PID" 2>/dev/null
         IDLE_KILLED=1
         break
@@ -247,6 +277,15 @@ wait "$TAIL_PID" 2>/dev/null
 
 echo ""
 echo "opencode exit code: $OPENCODE_EXIT"
+
+# When idle-killed, always dump server log tail (even without DEBUG_ORCHESTRATOR)
+# so the CI log shows what the server was doing when the watchdog fired.
+if [[ $IDLE_KILLED -eq 1 && -f "$SERVER_LOG" ]]; then
+    echo "=== server log tail (last 80 lines before idle kill) ==="
+    tail -n 80 "$SERVER_LOG" 2>/dev/null || true
+    echo "=== end server log tail ==="
+fi
+
 if [[ "${DEBUG_ORCHESTRATOR:-}" == "true" ]]; then
     echo "=== opencode post-execution diagnostics ==="
     echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -260,6 +299,16 @@ if [[ "${DEBUG_ORCHESTRATOR:-}" == "true" ]]; then
         echo "=== end output log ==="
     else
         echo "WARNING: Output log file $OUTPUT_LOG does not exist!"
+    fi
+    echo "Server log file: $SERVER_LOG"
+    if [[ -f "$SERVER_LOG" ]]; then
+        echo "Server log size: $(wc -c < "$SERVER_LOG") bytes, $(wc -l < "$SERVER_LOG") lines"
+        echo "=== Full server log contents ==="
+        cat "$SERVER_LOG"
+        echo ""
+        echo "=== end server log ==="
+    else
+        echo "Server log not found (opencode may be running in local mode)"
     fi
 fi
 
