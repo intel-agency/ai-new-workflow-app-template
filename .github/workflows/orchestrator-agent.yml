@@ -5,9 +5,9 @@ on:
     types: [opened, edited, reopened, assigned]
   issue_comment:
     types: [created, edited]
-  workflow_run:    
+  workflow_run:
     types: [completed]
-    workflows: ["Publish Docker", "Pre-build dev container image"]  
+    workflows: ["Publish Docker", "Pre-build dev container image"]
   # pull_request_review_comment:
   #   types: [created, edited]
   # pull_request_review:
@@ -20,17 +20,19 @@ on:
         description: "Custom prompt to send to the orchestrator (bypasses event assembly)"
         required: false
         type: string
-    
 
 jobs:
   orchestrate:
     runs-on: ubuntu-24.04
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     permissions:
       id-token: write
       contents: write
       pull-requests: write
       issues: write
-      packages: read
+      packages: read   
     env:
       # Secrets must be available at job level so they're present during
       # 'devcontainer up' — the postStartCommand launches the opencode server
