@@ -99,15 +99,32 @@ Now executing **Assignment 3: create-project-structure**. This requires Python a
 
 Step 13 "Execute orchestrator agent in devcontainer" started at `07:02:12Z` and is still running. Cannot fetch logs from in-progress runs via `gh run view --log`. Either the orchestrator is processing many tasks successfully (fix keeping it alive), or it's stuck but the hard ceiling (90m) hasn't been hit yet.
 
-<https://github.com/intel-agency/workflow-orchestration-queue-golf43/actions/runs/23332549552/job/67866999506>
+NM! THIS IS A GOLDEN 100% PERFECTY COMPLETION RIGHT HERE ------> <https://github.com/intel-agency/workflow-orchestration-queue-golf43/actions/runs/23332549552/job/67866999506>
 
-<https://github.com/intel-agency/workflow-orchestration-queue-delta86/actions/runs/23332933790/job/67868109799>
 
-## P5: Agent-instructions-expert running forever in india42
+
+THIS ISTIME OUT DOING NOTHGING -->> <https://github.com/intel-agency/workflow-orchestration-queue-delta86/actions/runs/23332933790/job/67868109799>
+
+## P5: Watchdog race condition causing premature idle-kill during subagent work
+
+**Status: FIXED** (commit `5d89c97` in `ai-new-workflow-app-template`)
+
+**Root Cause:** Race condition in `run_opencode_prompt.sh` watchdog loop. When checking server activity via `/proc/<pid>/io write_bytes`, a single 30-second interval where `write_bytes` didn't change caused `server_io_active` to flip to `false`. The fallback used `server_log_idle` (mtime of `/tmp/opencode-serve.log`), which only reflected server **startup** time — not last activity. So `server_idle` jumped from 0 to the full runtime (~950s), immediately triggering the 15m idle kill even though the server was actively working 30 seconds earlier.
+
+**Evidence from india42 log:**
+```
+11:44:44 [watchdog] client output idle 886s, server I/O active (write_bytes=146317312) — subagent likely running
+11:45:14 Warning: opencode idle for 15m (no output from client or server); terminating
+```
+Server I/O was confirmed active at 11:44:44. One 30s check later, write_bytes didn't change (normal during LLM API inference pause) → `server_idle` jumped to ~952s → killed.
+
+**Why golf43 succeeded (golden run):** Same code, same template. golf43 ran for 1h 4m and completed all project-setup tasks. It simply never had a 30-second I/O gap at a moment when client output idle exceeded 15m. The bug is timing-dependent — a race condition.
+
+**Fix:** Track `_last_server_io_time` (timestamp of last observed I/O activity) instead of falling back to server log mtime. When `/proc/io` is available but `write_bytes` doesn't change for one interval, compute `server_idle = now - _last_server_io_time` (e.g., 30s) instead of `server_idle = server_log_idle` (e.g., 952s). The process is only killed when server I/O has been truly inactive for a full 15 minutes since the last time it was observed.
+
+**Validation:** Pending — new queue repos created from the updated template will pick up the fix. Use `DEBUG_ORCHESTRATOR=true` repo variable + `DEBUG` keyword in trigger issue body for full watchdog diagnostics including the new `last_io=Ns_ago` field.
 
 <https://github.com/intel-agency/workflow-orchestration-queue-india42>
-
-First delegation in `orchestra7tion-agent.yml` runs forever. Some kind of race condition.
 
 <https://github.com/intel-agency/workflow-orchestration-queue-india42/actions/runs/23340845917/job/67893872608#logs>:
 
