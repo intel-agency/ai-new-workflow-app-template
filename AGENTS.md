@@ -165,18 +165,29 @@ scope: repository
 
     <verification_commands>
       <!--
+        MANDATORY: After every non-trivial change, run validation BEFORE commit/push.
+        Do NOT commit or push until it passes. Do NOT skip steps.
+
+        Local (runs all checks sequentially — lint, scan, test):
+          pwsh -NoProfile -File ./scripts/validate.ps1 -All
+
+        This is the SAME script that CI calls with individual switches:
+          ./scripts/validate.ps1 -Lint   (CI: lint job)
+          ./scripts/validate.ps1 -Scan   (CI: scan job)
+          ./scripts/validate.ps1 -Test   (CI: test job)
+
+        If a check is skipped due to a missing local tool, run:
+          pwsh -NoProfile -File ./scripts/install-dev-tools.ps1
+
         | Check                  | Command                                              | When to run              |
         |========================|======================================================|==========================|
-        | Build + Roslyn analysis| dotnet build {SolutionName}.sln -warnaserror          | Every task               |
-        | Code style (C#)        | dotnet format {SolutionName}.sln --verify-no-changes  | Every task               |
-        | Unit tests             | dotnet test {SolutionName}.sln --no-build             | Every task               |
-        | Polyglot lint          | trunk check                                           | Every task               |
-        | Security scan          | trunk check --all --filter=trufflehog,osv-scanner,... | When explicitly required |
-        | Shell tests            | bash test/test-prompt-assembly.sh                     | Prompt/workflow changes  |
-        | Devcontainer tests     | bash test/test-devcontainer-tools.sh                  | Dockerfile changes       |
-        | Workflow structure     | grep -c "^name:" .github/workflows/*.yml (expect 1)   | Workflow changes         |
+        | All (local default)    | ./scripts/validate.ps1 -All                           | Every task               |
+        | Lint only              | ./scripts/validate.ps1 -Lint                           | Quick check              |
+        | Scan only              | ./scripts/validate.ps1 -Scan                           | Secrets concern          |
+        | Test only              | ./scripts/validate.ps1 -Test                           | After lint passes        |
+        | Devcontainer tests     | bash test/test-devcontainer-tools.sh                   | Dockerfile changes       |
       -->
-      <rule>When adding a CI workflow, add its equivalent local command to this table.</rule>
+      <rule>When adding a CI workflow check, add its equivalent to scripts/validate.ps1.</rule>
     </verification_commands>
 
     <post_commit_monitoring>
