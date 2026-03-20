@@ -310,8 +310,14 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
 
     if [[ $elapsed -ge $HARD_CEILING_SECS ]]; then
         echo ""
-        echo "::warning::opencode hit ${HARD_CEILING_SECS}s hard ceiling; terminating"
+        echo "::error::opencode hit ${HARD_CEILING_SECS}s hard ceiling; terminating"
         kill "$OPENCODE_PID" 2>/dev/null
+        # Escalate to SIGKILL if SIGTERM doesn't work within 10s
+        sleep 10
+        if kill -0 "$OPENCODE_PID" 2>/dev/null; then
+            echo "::warning::opencode did not exit after SIGTERM; sending SIGKILL"
+            kill -9 "$OPENCODE_PID" 2>/dev/null
+        fi
         IDLE_KILLED=1
         break
     fi
@@ -319,8 +325,14 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
     # Idle detection: only trigger when BOTH client output and server are stale
     if [[ $idle -ge $IDLE_TIMEOUT_SECS ]]; then
         echo ""
-        echo "::warning::opencode idle for $(( idle / 60 ))m (no output from client or server); terminating"
+        echo "::error::opencode idle for $(( idle / 60 ))m (no output from client or server); terminating"
         kill "$OPENCODE_PID" 2>/dev/null
+        # Escalate to SIGKILL if SIGTERM doesn't work within 10s
+        sleep 10
+        if kill -0 "$OPENCODE_PID" 2>/dev/null; then
+            echo "::warning::opencode did not exit after SIGTERM; sending SIGKILL"
+            kill -9 "$OPENCODE_PID" 2>/dev/null
+        fi
         IDLE_KILLED=1
         break
     fi
@@ -372,8 +384,11 @@ rm -f "$OUTPUT_LOG"
 
 set -e
 
+# Exit non-zero on idle kill so the workflow properly reports failure.
+# Previously this was `exit 0` which masked SIGTERM (143) as success,
+# causing incomplete runs to appear as "succeeded" in GitHub Actions.
 if [[ $IDLE_KILLED -eq 1 ]]; then
-    exit 0
+    exit 1
 fi
 
 exit ${OPENCODE_EXIT}

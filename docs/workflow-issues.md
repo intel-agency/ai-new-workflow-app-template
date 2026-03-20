@@ -63,7 +63,12 @@ Now executing **Assignment 3: create-project-structure**. This requires Python a
 
 ## P4: /orchestrate-project-setup timeout and completion issues
 
-**Status: PARTIALLY FIXED** — `--thinking` + `/proc/io` watchdog fixes prevent false-positive kills during subagent work; genuine subagent stalls still cause 15m idle kill
+**Status: FIXED** (commit TBD in `ai-new-workflow-app-template`) — three infrastructure bugs fixed:
+1. **Exit code masking**: Idle-killed runs exited 0, making GitHub Actions report "succeeded" despite incomplete work. Now exits 1.
+2. **`::warning::` → `::error::`**: Idle kills and hard-ceiling kills are failures — annotated as `::error::` so they surface in the workflow summary.
+3. **SIGTERM→SIGKILL escalation**: After sending SIGTERM, waits 10s then sends SIGKILL if the process hasn't exited, preventing zombie/hung processes.
+
+Combined with P5's watchdog race-condition fix, the idle kill is now reliable: it won't false-positive during active subagent work (P5), it properly reports failure when it does fire (P4), and it cleans up stuck processes.
 
 ### Delta86 analysis (run 23332933790 — succeeded in 26m 14s)
 
