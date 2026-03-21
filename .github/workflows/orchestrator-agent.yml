@@ -25,11 +25,29 @@ permissions:
   contents: read
 
 jobs:
+  skip-event:
+    # Explicitly ignored event conditions. Add new skip cases to the `if` below.
+    # When this job runs, its step outputs the event details and explains the skip.
+    runs-on: ubuntu-24.04
+    if: >-
+      github.actor == 'traycerai[bot]'
+    steps:
+      - name: Report skipped event
+        run: |
+          echo "::notice::Orchestrator skipped — event explicitly ignored"
+          echo "Event:  ${{ github.event_name }}"
+          echo "Action: ${{ github.event.action }}"
+          echo "Actor:  ${{ github.actor }}"
+          echo "Repo:   ${{ github.repository }}"
+          echo "Ref:    ${{ github.ref }}"
+          echo "Reason: Actor '${{ github.actor }}' is in the skip list"
+
   orchestrate:
     runs-on: ubuntu-24.04
     if: >-
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
+      github.actor != 'traycerai[bot]' &&
+      (github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success')
     permissions:
       id-token: write
       contents: write
@@ -207,7 +225,7 @@ jobs:
             --workspace-folder . \
             --config .devcontainer/devcontainer.json \
             -- bash -c "tar -cf - -C /tmp/trace-bundle ." | tar -xf - -C /tmp/trace-artifacts/ 2>/dev/null || true
-          echo "Trace artifacts collected: $(ls -1 /tmp/trace-artifacts/ 2>/dev/null | wc -l) files"
+          echo "Trace artifacts collected: $(find /tmp/trace-artifacts/ -maxdepth 1 -type f 2>/dev/null | wc -l) files"
 
       - name: Upload trace artifacts
         if: always()
