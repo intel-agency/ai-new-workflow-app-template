@@ -140,11 +140,11 @@ scope: repository
     <rule>Keep changes minimal and targeted.</rule>
     <rule>Do not hardcode secrets/tokens.</rule>
     <rule>Preserve the `__EVENT_DATA__` placeholder in `orchestrator-agent-prompt.md`.</rule>
-    <rule>Keep orchestrator delegation-depth ≤2 levels and "never write code directly" constraint. No limit on concurrent delegations.</rule>
     <rule>Pin action versions by SHA in workflow files.</rule>
     <rule>Never add duplicate top-level `name:`, `on:`, or `jobs:` keys in workflow YAML.</rule>
     <rule>`.opencode/` is checked out by `actions/checkout`; do not COPY it in the Dockerfile.</rule>
     <rule>Dockerfile lives at `.github/.devcontainer/Dockerfile`. Consumer devcontainer uses `"image:"` — no local build.</rule>
+    <rule>Repository labels are defined in `.github/.labels.json`. Use `scripts/import-labels.ps1` to sync them to a repo instance. When adding new labels, add them to this file — it is the single source of truth for the label set.</rule>
   </coding_conventions>
 
   <agent_specific_guardrails>

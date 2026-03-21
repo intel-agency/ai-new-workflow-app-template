@@ -14,26 +14,26 @@
 
 | # | Issue | Severity | Location | Category | Status |
 |---|-------|----------|----------|----------|--------|
-| 1 | `issues: labeled` trigger is commented out in workflow YAML | **P0 – Blocker** | `.github/workflows/orchestrator-agent.yml` | Orchestrator Workflow | Not Started |
-| 2 | Template `.labels.json` missing all `agent:*` and workflow labels | **P0 – Blocker** | `.github/.labels.json` | Labels / Template | Not Started |
-| 3 | No PR created in yankee89-b despite 1h12m orchestrator run | **P1 – Critical** | yankee89-b repo | Project Setup Workflow | Not Started |
-| 4 | No GitHub Project created in yankee89-b | **P1 – Critical** | yankee89-b repo | Project Setup Workflow | Not Started |
-| 5 | Label set incomplete in yankee89-b (17 vs 24 needed) | **P1 – Critical** | yankee89-b labels | Labels | Not Started |
-| 6 | Sentinel claim markers block reclaim after restart (30-min stale timeout) | **P1 – Critical** | `src/osapow/sentinel/orchestrator.py` | Orchestrator Code | Not Started |
-| 7 | `SENTINEL_BOT_LOGIN` not validated at startup | **P1 – Critical** | `src/osapow/sentinel/orchestrator.py` | Orchestrator Code | Not Started |
-| 8 | Incomplete label cleanup during requeue | **P2 – Medium** | `src/osapow/queue/github_queue.py` | Queue / Labels | Not Started |
-| 9 | `GITHUB_TOKEN` not validated in notifier `create_app()` | **P2 – Medium** | `src/osapow/notifier/service.py` | Notifier Service | Not Started |
-| 10 | Docker COPY order breaks editable install | **P2 – Medium** | `Dockerfile` | Infrastructure | Not Started |
-| 11 | Healthcheck uses `curl` instead of Python | **P2 – Medium** | `docker-compose.yml` | Infrastructure | Not Started |
-| 12 | `verify_signature()` silent on missing WEBHOOK_SECRET | **P2 – Medium** | `src/osapow/notifier/service.py` | Security | Not Started |
-| 13 | Missing `issue_comment.created` action handling | **P2 – Medium** | `src/osapow/notifier/service.py` | Webhook Events | Not Started |
-| 14 | Missing `pull_request_review` event support | **P2 – Medium** | `src/osapow/notifier/service.py` | Webhook Events | Not Started |
-| 15 | `pyproject.toml` entry point uses async — needs sync wrapper | **P2 – Medium** | `pyproject.toml` | Packaging | Not Started |
-| 16 | Traycerai bot edits trigger redundant orchestrator runs | **P3 – Low** | yankee89-b actions | Workflow Triggering | Not Started |
-| 17 | `.labels.json` URLs point to `nam20485/AgentAsAService` (stale source) | **P3 – Low** | `.github/.labels.json` | Template Hygiene | Not Started |
+| 1 | `issues: labeled` trigger is commented out in workflow YAML | **P0 – Blocker** | `.github/workflows/orchestrator-agent.yml` | Orchestrator Workflow | Complete |
+| 2 | Template `.labels.json` missing all `agent:*` and workflow labels | **P0 – Blocker** | `.github/.labels.json` | Labels / Template | Complete |
+| 3 | No PR created in yankee89-b despite 1h12m orchestrator run | **P1 – Critical** | yankee89-b repo | Project Setup Workflow | Complete |
+| 4 | No GitHub Project created in yankee89-b | **P1 – Critical** | yankee89-b repo | Project Setup Workflow | Complete |
+| 5 | Label set incomplete in yankee89-b (17 vs 24 needed) | **P1 – Critical** | yankee89-b labels | Labels | Complete |
+| 6 | Sentinel claim markers block reclaim after restart (30-min stale timeout) | **P1 – Critical** | `src/osapow/sentinel/orchestrator.py` | Orchestrator Code | Deferred |
+| 7 | `SENTINEL_BOT_LOGIN` not validated at startup | **P1 – Critical** | `src/osapow/sentinel/orchestrator.py` | Orchestrator Code | Deferred |
+| 8 | Incomplete label cleanup during requeue | **P2 – Medium** | `src/osapow/queue/github_queue.py` | Queue / Labels | Deferred |
+| 9 | `GITHUB_TOKEN` not validated in notifier `create_app()` | **P2 – Medium** | `src/osapow/notifier/service.py` | Notifier Service | Deferred |
+| 10 | Docker COPY order breaks editable install | **P2 – Medium** | `Dockerfile` | Infrastructure | Complete |
+| 11 | Healthcheck uses `curl` instead of Python | **P2 – Medium** | `docker-compose.yml` | Infrastructure | Complete |
+| 12 | `verify_signature()` silent on missing WEBHOOK_SECRET | **P2 – Medium** | `src/osapow/notifier/service.py` | Security | Deferred |
+| 13 | Missing `issue_comment.created` action handling | **P2 – Medium** | `src/osapow/notifier/service.py` | Webhook Events | Deferred |
+| 14 | Missing `pull_request_review` event support | **P2 – Medium** | `src/osapow/notifier/service.py` | Webhook Events | Deferred |
+| 15 | `pyproject.toml` entry point uses async — needs sync wrapper | **P2 – Medium** | `pyproject.toml` | Packaging | Deferred |
+| 16 | Traycerai bot edits trigger redundant orchestrator runs | **P3 – Low** | yankee89-b actions | Workflow Triggering | Complete |
+| 17 | `.labels.json` URLs point to `nam20485/AgentAsAService` (stale source) | **P3 – Low** | `.github/.labels.json` | Template Hygiene | Complete |
 | 18 | Concurrent delegation artificially limited to 2 in orchestrator prompt | **P1 – Critical** | `.opencode/agents/orchestrator.md`, `AGENTS.md` | Orchestrator Prompt | Complete |
 | 19 | GitHub Project creation blocked — missing `project` OAuth scope | **P1 – Critical** | `orchestrator-agent.yml` permissions + PAT | Permissions | Complete |
-| 20 | Agent incorrectly assumes project is .NET-based | **P2 – Medium** | `create-project-structure` dynamic workflow | Workflow Definition | Not Started |
+| 20 | Agent incorrectly assumes project is .NET-based | **P2 – Medium** | `create-project-structure` dynamic workflow | Workflow Definition | Complete |
 | 21 | Orchestrator idle-kill exits code 0, masking failures; no SIGKILL escalation | **P1 – Critical** | `scripts/devcontainer-opencode.sh` | Watchdog / CI | Complete |
 | 22 | Watchdog race condition — premature idle-kill during active subagent work | **P1 – Critical** | `scripts/devcontainer-opencode.sh` | Watchdog | Complete |
 
@@ -45,7 +45,7 @@
 
 ### Issue 1: `issues: labeled` trigger is commented out in workflow YAML
 
-**Status:** Not Started
+**Status:** Complete
 
 **Remarks:**
 
@@ -84,7 +84,7 @@ Add a condition in the job to skip runs for labels that aren't workflow-relevant
 
 ### Issue 2: Template `.labels.json` missing all `agent:*` and workflow labels
 
-**Status:** Not Started
+**Status:** Complete
 
 **Remarks:**
 
@@ -136,7 +136,7 @@ Also remove the stale `id`, `node_id`, and `url` fields that point to `nam20485/
 
 ### Issue 3: No PR created in yankee89-b despite 1h12m orchestrator run
 
-**Status:** Not Started
+**Status:** Complete
 
 **Remarks:**
 
@@ -165,7 +165,7 @@ The orchestrator ran due to the `workflow_run` trigger (prebuild devcontainer co
 
 ### Issue 4: No GitHub Project created in yankee89-b
 
-**Status:** Not Started
+**Status:** Complete
 
 **Remarks:**
 
@@ -192,7 +192,7 @@ Contrast with foxtrot54 which successfully created a project: "workflow-orchestr
 
 ### Issue 5: Label set incomplete in yankee89-b (17 vs 24 needed)
 
-**Status:** Not Started
+**Status:** Complete
 
 
 **Remarks:** Issue 2 fix will be sufficient, as explained.
@@ -214,7 +214,7 @@ yankee89-b has 17 labels. foxtrot54 has 24 labels. The difference includes the `
 
 ### Issue 6: Sentinel claim markers block reclaim after restart
 
-**Status:** Not Started
+**Status:** Deferred
 
 **Remarks:**
 
@@ -237,7 +237,7 @@ Per Codex review: `_cleanup()` now requeues the active task back to `agent:queue
 
 ### Issue 7: `SENTINEL_BOT_LOGIN` not validated at startup
 
-**Status:** Not Started
+**Status:** Deferred
 
 
 **Remarks:**
@@ -260,7 +260,7 @@ Per Codex review: `main()` only validates `GITHUB_TOKEN`, `GITHUB_ORG`, and `GIT
 
 ### Issue 8: Incomplete label cleanup during requeue
 
-**Status:** Not Started
+**Status:** Deferred
 
 **Remarks:**
 
@@ -282,7 +282,7 @@ Per Codex review: `handle_github_webhook()` sends retries from `agent:reconcilin
 
 ### Issue 9: `GITHUB_TOKEN` not validated in notifier `create_app()`
 
-**Status:** Not Started
+**Status:** Deferred
 
 **Remarks:**
 
@@ -299,7 +299,7 @@ Per Codex review: `create_app()` always constructs `GitHubQueue` from `os.enviro
 
 ### Issue 10: Docker COPY order breaks editable install
 
-**Status:** Not Started
+**Status:** Complete
 
 **Remarks:**
 
@@ -316,7 +316,7 @@ Per Codex review: `COPY src/ ./src/` must come before `uv pip install -e .` for 
 
 ### Issue 11: Healthcheck uses `curl` instead of Python
 
-**Status:** Not Started
+**Status:** Complete
 
 **Remarks:**
 
@@ -333,7 +333,7 @@ Per Codex review: The container doesn't include `curl`. Use a Python-based urlli
 
 ### Issue 12: `verify_signature()` silent on missing WEBHOOK_SECRET
 
-**Status:** Not Started
+**Status:** Deferred
 
 **Remarks:**
 
@@ -350,7 +350,7 @@ Per Codex review: If `WEBHOOK_SECRET` is not configured, signature verification 
 
 ### Issue 13: Missing `issue_comment.created` action handling
 
-**Status:** Not Started
+**Status:** Deferred
 
 **Remarks:**
 
@@ -367,7 +367,7 @@ Per Codex review: The webhook handler didn't handle the `created` action for `is
 
 ### Issue 14: Missing `pull_request_review` event support
 
-**Status:** Not Started
+**Status:** Deferred
 
 **Remarks:**
 
@@ -384,7 +384,7 @@ Per Codex review: `pull_request_review` events (submitted, edited) were not hand
 
 ### Issue 15: `pyproject.toml` entry point uses async — needs sync wrapper
 
-**Status:** Not Started
+**Status:** Deferred
 
 **Remarks:**
 
@@ -401,7 +401,7 @@ Per Codex review: Console script entry points must be synchronous functions. The
 
 ### Issue 16: Traycerai bot edits trigger redundant orchestrator runs
 
-**Status:** Not Started
+**Status:** Complete
 
 **Remarks:**
 
@@ -423,7 +423,7 @@ Orchestrator-agent runs #3-#6 were triggered by `traycerai` bot editing its comm
 
 ### Issue 17: `.labels.json` URLs point to `nam20485/AgentAsAService`
 
-**Status:** Not Started
+**Status:** Complete
 
 **Remarks:**
 
@@ -491,7 +491,7 @@ Github-Expert: "GITHUB_TOKEN doesn't have permission to create projects"
 
 ### Issue 20: Agent incorrectly assumes project is .NET-based
 
-**Status:** Not Started
+**Status:** Complete
 **Remarks:**
 
 Fix.
