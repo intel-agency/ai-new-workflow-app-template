@@ -183,3 +183,37 @@ jobs:
               opencode session list --format json 2>&1 | head -50 || echo 'session list failed';
             "
           echo "::endgroup::"
+
+      - name: Collect trace artifacts from devcontainer
+        if: always()
+        run: |
+          mkdir -p /tmp/trace-artifacts
+          # Copy rotating log files out of the devcontainer
+          devcontainer exec \
+            --workspace-folder . \
+            --config .devcontainer/devcontainer.json \
+            -- bash -c "
+              mkdir -p /tmp/trace-bundle;
+              cp ~/.local/share/opencode/log/*.log /tmp/trace-bundle/ 2>/dev/null || true;
+              cp /tmp/opencode-serve.log /tmp/trace-bundle/opencode-serve.log 2>/dev/null || true;
+              python3 scripts/trace-extract.py --scrub > /tmp/trace-bundle/subagent-traces.txt 2>&1 || true;
+            "
+          # Pull files from the container to the runner
+          devcontainer exec \
+            --workspace-folder . \
+            --config .devcontainer/devcontainer.json \
+            -- bash -c "cat /tmp/trace-bundle/subagent-traces.txt" > /tmp/trace-artifacts/subagent-traces.txt 2>/dev/null || true
+          devcontainer exec \
+            --workspace-folder . \
+            --config .devcontainer/devcontainer.json \
+            -- bash -c "tar -cf - -C /tmp/trace-bundle ." | tar -xf - -C /tmp/trace-artifacts/ 2>/dev/null || true
+          echo "Trace artifacts collected: $(ls -1 /tmp/trace-artifacts/ 2>/dev/null | wc -l) files"
+
+      - name: Upload trace artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencode-traces
+          path: /tmp/trace-artifacts/
+          retention-days: 14
+          if-no-files-found: ignore

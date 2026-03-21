@@ -60,10 +60,14 @@ if is_server_ready; then
   exit 0
 fi
 
-log "starting opencode serve on ${OPENCODE_SERVER_HOSTNAME}:${OPENCODE_SERVER_PORT}"
+# Server runs at DEBUG to capture rich subagent traces in its log file.
+# This does NOT affect client stdout — the client still runs at INFO.
+OPENCODE_SERVER_LOG_LEVEL="${OPENCODE_SERVER_LOG_LEVEL:-DEBUG}"
+log "starting opencode serve on ${OPENCODE_SERVER_HOSTNAME}:${OPENCODE_SERVER_PORT} (log-level: ${OPENCODE_SERVER_LOG_LEVEL})"
 nohup opencode serve \
   --hostname "$OPENCODE_SERVER_HOSTNAME" \
   --port "$OPENCODE_SERVER_PORT" \
+  --log-level "$OPENCODE_SERVER_LOG_LEVEL" \
   >>"$OPENCODE_SERVER_LOG" 2>&1 &
 server_pid=$!
 echo "$server_pid" > "$OPENCODE_SERVER_PIDFILE"
