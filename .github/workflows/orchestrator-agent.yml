@@ -28,9 +28,17 @@ jobs:
   skip-event:
     # Explicitly ignored event conditions. Add new skip cases to the `if` below.
     # When this job runs, its step outputs the event details and explains the skip.
+    # Skip cases:
+    #   1. traycerai[bot] actor — avoid feedback loops
+    #   2. labeled events for non-workflow labels — only implementation:ready
+    #      and implementation:complete should trigger the orchestrator
     runs-on: ubuntu-24.04
     if: >-
-      github.actor == 'traycerai[bot]'
+      github.actor == 'traycerai[bot]' ||
+      (github.event_name == 'issues' &&
+       github.event.action == 'labeled' &&
+       github.event.label.name != 'implementation:ready' &&
+       github.event.label.name != 'implementation:complete')
     steps:
       - name: Report skipped event
         run: |
@@ -38,14 +46,23 @@ jobs:
           echo "Event:  ${{ github.event_name }}"
           echo "Action: ${{ github.event.action }}"
           echo "Actor:  ${{ github.actor }}"
+          echo "Label:  ${{ github.event.label.name || 'N/A' }}"
           echo "Repo:   ${{ github.repository }}"
           echo "Ref:    ${{ github.ref }}"
-          echo "Reason: Actor '${{ github.actor }}' is in the skip list"
+          if [ "${{ github.actor }}" = "traycerai[bot]" ]; then
+            echo "Reason: Actor 'traycerai[bot]' is in the skip list"
+          else
+            echo "Reason: Label '${{ github.event.label.name }}' is not a workflow-relevant label"
+          fi
 
   orchestrate:
     runs-on: ubuntu-24.04
     if: >-
       github.actor != 'traycerai[bot]' &&
+      (github.event_name != 'issues' ||
+       github.event.action != 'labeled' ||
+       github.event.label.name == 'implementation:ready' ||
+       github.event.label.name == 'implementation:complete') &&
       (github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success')
     permissions:
