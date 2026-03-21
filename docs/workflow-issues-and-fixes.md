@@ -46,7 +46,10 @@
 ### Issue 1: `issues: labeled` trigger is commented out in workflow YAML
 
 **Status:** Not Started
+
 **Remarks:**
+
+I added this already. Verify and mark completed. Add a condition to run a "skip" job which outputs the matching event and event data and explains it is explicitly ignored so the orchestration agent will skip running. We can add ignored conditions here cumulatively to the if: statement for cases we want to skip running the orchestration agent.
 
 **Location:** `.github/workflows/orchestrator-agent.yml`, line 4
 
@@ -82,7 +85,10 @@ Add a condition in the job to skip runs for labels that aren't workflow-relevant
 ### Issue 2: Template `.labels.json` missing all `agent:*` and workflow labels
 
 **Status:** Not Started
+
 **Remarks:**
+
+Implement A as recommended. Additionally add more prevalent directions with the path to the .labels.json file to reduce the probability of agents missing it.
 
 **Location:** `.github/.labels.json`
 
@@ -131,7 +137,10 @@ Also remove the stale `id`, `node_id`, and `url` fields that point to `nam20485/
 ### Issue 3: No PR created in yankee89-b despite 1h12m orchestrator run
 
 **Status:** Not Started
+
 **Remarks:**
+
+Implement A as recommended.
 
 **Location:** yankee89-b repository — 0 open/closed PRs
 
@@ -157,7 +166,10 @@ The orchestrator ran due to the `workflow_run` trigger (prebuild devcontainer co
 ### Issue 4: No GitHub Project created in yankee89-b
 
 **Status:** Not Started
+
 **Remarks:**
+
+trigger-project-setup.ps1 I commented out because the timing didn't work. At the end of create-repo-from-plan-docs.ps1 the docker and devcontainer images haven't had time to build yet so orchestration doesn't work. It just ends up calling orchestrate-agent workflow which errors out. Create the create-project.ps1 script but after that only add directions in the existing workflow explaining how to use it and then increase the visibility of the directions to use it to create the project in order to reduce the possibility it's missed.
 
 **Location:** yankee89-b repository — 0 projects
 
@@ -181,7 +193,9 @@ Contrast with foxtrot54 which successfully created a project: "workflow-orchestr
 ### Issue 5: Label set incomplete in yankee89-b (17 vs 24 needed)
 
 **Status:** Not Started
-**Remarks:**
+
+
+**Remarks:** Issue 2 fix will be sufficient, as explained.
 
 **Location:** yankee89-b labels page
 
@@ -201,7 +215,10 @@ yankee89-b has 17 labels. foxtrot54 has 24 labels. The difference includes the `
 ### Issue 6: Sentinel claim markers block reclaim after restart
 
 **Status:** Not Started
+
 **Remarks:**
+
+Leave not started — this will be resolved in the implementation phase (which hasn't started yet).
 
 **Location:** `src/osapow/sentinel/orchestrator.py` (foxtrot54 codebase, produced by project-setup)
 
@@ -221,7 +238,11 @@ Per Codex review: `_cleanup()` now requeues the active task back to `agent:queue
 ### Issue 7: `SENTINEL_BOT_LOGIN` not validated at startup
 
 **Status:** Not Started
+
+
 **Remarks:**
+
+Leave not started — this will be resolved in the implementation phase (which hasn't started yet).
 
 **Location:** `src/osapow/sentinel/orchestrator.py`, `main()` function
 
@@ -240,7 +261,10 @@ Per Codex review: `main()` only validates `GITHUB_TOKEN`, `GITHUB_ORG`, and `GIT
 ### Issue 8: Incomplete label cleanup during requeue
 
 **Status:** Not Started
+
 **Remarks:**
+
+Leave not started — this will be resolved in the implementation phase (which hasn't started yet).
 
 **Location:** `src/osapow/queue/github_queue.py`, `requeue_with_feedback()`
 
@@ -259,7 +283,10 @@ Per Codex review: `handle_github_webhook()` sends retries from `agent:reconcilin
 ### Issue 9: `GITHUB_TOKEN` not validated in notifier `create_app()`
 
 **Status:** Not Started
+
 **Remarks:**
+
+Leave not started — this will be resolved in the implementation phase (which hasn't started yet).
 
 **Location:** `src/osapow/notifier/service.py`, `create_app()` function
 
@@ -273,7 +300,10 @@ Per Codex review: `create_app()` always constructs `GitHubQueue` from `os.enviro
 ### Issue 10: Docker COPY order breaks editable install
 
 **Status:** Not Started
+
 **Remarks:**
+
+Implement recommended solution.
 
 **Location:** `Dockerfile`
 
@@ -287,7 +317,10 @@ Per Codex review: `COPY src/ ./src/` must come before `uv pip install -e .` for 
 ### Issue 11: Healthcheck uses `curl` instead of Python
 
 **Status:** Not Started
+
 **Remarks:**
+
+Implement recommended solution.
 
 **Location:** `docker-compose.yml`
 
@@ -301,7 +334,10 @@ Per Codex review: The container doesn't include `curl`. Use a Python-based urlli
 ### Issue 12: `verify_signature()` silent on missing WEBHOOK_SECRET
 
 **Status:** Not Started
+
 **Remarks:**
+
+Leave not started — this will be resolved in the implementation phase (which hasn't started yet).
 
 **Location:** `src/osapow/notifier/service.py`
 
@@ -315,7 +351,10 @@ Per Codex review: If `WEBHOOK_SECRET` is not configured, signature verification 
 ### Issue 13: Missing `issue_comment.created` action handling
 
 **Status:** Not Started
+
 **Remarks:**
+
+Leave not started — this isn't needed yet. What action would we need for issue_comment.created?
 
 **Location:** `src/osapow/notifier/service.py`
 
@@ -329,7 +368,10 @@ Per Codex review: The webhook handler didn't handle the `created` action for `is
 ### Issue 14: Missing `pull_request_review` event support
 
 **Status:** Not Started
+
 **Remarks:**
+
+Leave not started — this isn't needed yet. What action would we need for pull_request_review?
 
 **Location:** `src/osapow/notifier/service.py`
 
@@ -343,7 +385,10 @@ Per Codex review: `pull_request_review` events (submitted, edited) were not hand
 ### Issue 15: `pyproject.toml` entry point uses async — needs sync wrapper
 
 **Status:** Not Started
+
 **Remarks:**
+
+Leave not started — this isn't needed yet.
 
 **Location:** `pyproject.toml`
 
@@ -357,7 +402,10 @@ Per Codex review: Console script entry points must be synchronous functions. The
 ### Issue 16: Traycerai bot edits trigger redundant orchestrator runs
 
 **Status:** Not Started
+
 **Remarks:**
+
+Add this case to the "skip" job explained in Issue 1.
 
 **Location:** yankee89-b Actions tab
 
@@ -376,7 +424,10 @@ Orchestrator-agent runs #3-#6 were triggered by `traycerai` bot editing its comm
 ### Issue 17: `.labels.json` URLs point to `nam20485/AgentAsAService`
 
 **Status:** Not Started
+
 **Remarks:**
+
+Fix.
 
 **Location:** `.github/.labels.json`
 
@@ -391,6 +442,8 @@ The labels file was exported from a different repo (`nam20485/AgentAsAService`).
 
 **Status:** Complete
 **Remarks:** Fixed in commit `bc4126c`. Validated in delta86 logs (model still echoes old behavior on pre-fix repos seeded before the fix).
+
+Remove depth constraints as well. Leave no artificial constraints on orchestrator's delegations.
 
 **Location:** `.opencode/agents/orchestrator.md`, `AGENTS.md`
 
@@ -419,6 +472,8 @@ Let me delegate these tasks. I can delegate up to 2 tasks concurrently.
 **Status:** Complete
 **Remarks:** Fixed in commit `7f835c0`. `projects: write` added to workflow permissions; `GH_ORCHESTRATION_AGENT_TOKEN` PAT must also have the `project` scope (verify via `gh auth refresh -h github.com -s project`).
 
+I believe the GH_ORCHESTRATION_AGENT_TOKEN already has this scope. Verify that it's used in this process.
+
 **Location:** `.github/workflows/orchestrator-agent.yml` permissions block; `GH_ORCHESTRATION_AGENT_TOKEN` PAT settings
 
 **Description:**
@@ -438,6 +493,8 @@ Github-Expert: "GITHUB_TOKEN doesn't have permission to create projects"
 
 **Status:** Not Started
 **Remarks:**
+
+Fix.
 
 **Location:** `create-project-structure` dynamic workflow definition (remote: `nam20485/agent-instructions`)
 
