@@ -45,6 +45,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    Write-Error "Required command 'gh' not found in PATH. Please install the GitHub CLI first."
+    exit 1
+}
+
 $fullRepo = "$Owner/$Repo"
 
 Write-Host "Creating GitHub Project for $fullRepo..." -ForegroundColor Cyan
