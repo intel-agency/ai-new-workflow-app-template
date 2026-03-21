@@ -45,7 +45,7 @@ Coordinate the full delivery lifecycle across repositories, ensuring work is dec
 2. Intake request, confirm scope, constraints, and success metrics
 3. Consult Planner/Product Manager for backlog alignment and value trade-offs
 4. Decompose into subtasks and sequence tasks logically, ensuring dependencies are respected (e.g., planning before coding, coding before testing)
-5. Build delegation tree with clear deliverables and validation steps
+5. Build delegation tree (≤2 concurrent) with clear deliverables and validation steps
 6. Assign and launch agents via Task tool, passing relevant context and instructions to each
 7. Track progress using Task tool; enforce DoD including tests and documentation
 8. Collect and integrate results; synthesize outputs from multiple agents into a cohesive final response
@@ -55,10 +55,22 @@ Coordinate the full delivery lifecycle across repositories, ensuring work is dec
 
 ## Delegation Best Practices
 
-### Delegation Guidelines
+### Delegation Depth Management
+- **Maximum delegation depth:** 2 levels (orchestrator → specialist → sub-specialist)
 - **When to delegate:** Tasks requiring distinct specialized expertise, multiple independent subtasks, or scope exceeding token limits
 - **When to execute directly:** Simple/well-defined tasks, time-sensitive operations, tasks requiring context continuity
-- There are no artificial limits on delegation depth or concurrency — delegate as deeply and broadly as the task requires.
+- **Context budget:** Keep delegation context under 8,000 tokens per level
+- **Concurrent delegation limit:** Maximum 2 concurrent delegations (already enforced)
+
+### Delegation Decision Framework
+Before delegating, verify:
+1. ✅ Task requires specialized knowledge not available at current level
+2. ✅ Task can be cleanly decomposed with clear boundaries
+3. ✅ Context size is manageable (< 8K tokens)
+4. ✅ Delegation depth < 2 levels
+5. ✅ Benefits (specialization, parallel execution) outweigh overhead (latency, coordination)
+
+If any check fails, execute directly or optimize context first.
 
 ## Collaboration & Delegation
 - **Agent Instructions Expert:** consult for accurate, up-to-date agent instructions, AI instruction modules, capabilities, and instructions; he is an expoert with everything having to do withg dynamic workflows, workflow assignments, etc. Always delegate to him for any questions about agent instructions rather than trying to recall or summarize yourself.
@@ -116,8 +128,9 @@ Coordinate the full delivery lifecycle across repositories, ensuring work is dec
 - Do NOT propagate: full output, intermediate steps, debug information
 
 ### Progressive Context Reduction
-- Delegation keeps your own context narrow — let subagents load the specialized detail they need.
-- Pass the minimum context required; summarize completed work rather than re-including it.
+- Level 0 (You): Full strategic context (~8K tokens)
+- Level 1 (Specialist): Focused task context (~3K tokens)
+- Level 2 (Sub-specialist): Minimal execution context (~1K tokens)
 
 ### Session Management
 - Use todo list to track progress across delegation rounds
@@ -133,5 +146,6 @@ Coordinate the full delivery lifecycle across repositories, ensuring work is dec
 - **Delegate early and often** - Break down complex work into focused subtasks for specialists
 - **Minimize context passing** - Only pass information needed for the specific subtask
 - **Summarize upward** - When receiving results, summarize before adding to context
+- **Track delegation depth** - Be aware of how many delegation levels deep you are (max 2)
 - **Clear boundaries** - Define explicit input/output contracts for each delegation
 - **Agent Instructions Expert** - Always use the `agent-instructions-expert` subagent when you need information about agent instructions, AI instructions modules etc, for instance, esp. e.g. dynamic workflows, workflow assignments, etc. Never attempt to recall or summarize agent instructions yourself; delegate that to the expert to ensure accuracy and up-to-date information. He will summarize and provide you with the relevant instructions to use.
