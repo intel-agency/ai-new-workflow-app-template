@@ -2,9 +2,9 @@ name: orchestrator-agent
 
 on:
   issues:
-    types: [opened, edited, reopened, assigned]
-  issue_comment:
-    types: [created, edited]
+    types: [opened] #, edited, reopened, assigned]
+  #issue_comment:
+  #  types: [created, edited]
   workflow_run:
     types: [completed]
     workflows: ["Pre-build dev container image"]
@@ -20,6 +20,9 @@ on:
         description: "Custom prompt to send to the orchestrator (bypasses event assembly)"
         required: false
         type: string
+
+permissions:
+  contents: read
 
 jobs:
   orchestrate:
@@ -37,7 +40,7 @@ jobs:
     env:
       # Secrets must be available at job level so they're present during
       # 'devcontainer up' — the postStartCommand launches the opencode server
-      # daemon, which reads API keys from remoteEnv (${localEnv:...}).
+      # daemon, which reads API keys from remoteEn`v (${localEnv:...}).
       # Setting them only on a later step leaves the server without auth.
       ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
       KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY: ${{ secrets.KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY }}
