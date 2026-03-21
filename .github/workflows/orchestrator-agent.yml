@@ -2,7 +2,7 @@ name: orchestrator-agent
 
 on:
   issues:
-    types: [opened] #, edited, reopened, assigned]
+    types: [opened, labeled] #, edited, reopened, assigned]
   #issue_comment:
   #  types: [created, edited]
   workflow_run:
