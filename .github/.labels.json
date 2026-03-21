@@ -97,7 +97,7 @@
     },
     {
         "name": "agent:in-progress",
-        "color": "0e8a16",
+        "color": "0075ca",
         "default": false,
         "description": "Agent is actively working on this issue"
     },

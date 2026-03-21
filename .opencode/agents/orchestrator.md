@@ -115,6 +115,10 @@ Coordinate the full delivery lifecycle across repositories, ensuring work is dec
 - Return: status, summary, key_findings, next_actions
 - Do NOT propagate: full output, intermediate steps, debug information
 
+### Progressive Context Reduction
+- Delegation keeps your own context narrow — let subagents load the specialized detail they need.
+- Pass the minimum context required; summarize completed work rather than re-including it.
+
 ### Session Management
 - Use todo list to track progress across delegation rounds
 - Checkpoint completed work to avoid re-passing completed context
