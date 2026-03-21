@@ -53,6 +53,11 @@
   },
   "model": "zai-coding-plan/glm-5",
   "small_model": "zai-coding-plan/glm-4.5-air-x",
+  "permission": {
+    "external_directory": {
+      "/tmp/*": "allow"
+    }
+  },
   "mcp": {
     "sequential-thinking": {
       "type": "local",

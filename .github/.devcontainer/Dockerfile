@@ -4,9 +4,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG OPENCODE_VERSION=1.2.24
 ARG DOTNET_SDK_VERSION=10.0.102
 
-# System dependencies
+# System dependencies (python3 needed for scripts/trace-extract.py)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      curl unzip git ca-certificates \
+      curl unzip git ca-certificates python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Node.js 24.14.0 LTS (needed for MCP server packages)
