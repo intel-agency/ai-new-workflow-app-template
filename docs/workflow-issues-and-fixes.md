@@ -12,25 +12,30 @@
 
 ## Issue Summary
 
-| # | Issue | Severity | Location | Category |
-|---|-------|----------|----------|----------|
-| 1 | `issues: labeled` trigger is commented out in workflow YAML | **P0 – Blocker** | `.github/workflows/orchestrator-agent.yml` | Orchestrator Workflow |
-| 2 | Template `.labels.json` missing all `agent:*` and workflow labels | **P0 – Blocker** | `.github/.labels.json` | Labels / Template |
-| 3 | No PR created in yankee89-b despite 1h12m orchestrator run | **P1 – Critical** | yankee89-b repo | Project Setup Workflow |
-| 4 | No GitHub Project created in yankee89-b | **P1 – Critical** | yankee89-b repo | Project Setup Workflow |
-| 5 | Label set incomplete in yankee89-b (17 vs 24 needed) | **P1 – Critical** | yankee89-b labels | Labels |
-| 6 | Sentinel claim markers block reclaim after restart (30-min stale timeout) | **P1 – Critical** | `src/osapow/sentinel/orchestrator.py` | Orchestrator Code |
-| 7 | `SENTINEL_BOT_LOGIN` not validated at startup | **P1 – Critical** | `src/osapow/sentinel/orchestrator.py` | Orchestrator Code |
-| 8 | Incomplete label cleanup during requeue | **P2 – Medium** | `src/osapow/queue/github_queue.py` | Queue / Labels |
-| 9 | `GITHUB_TOKEN` not validated in notifier `create_app()` | **P2 – Medium** | `src/osapow/notifier/service.py` | Notifier Service |
-| 10 | Docker COPY order breaks editable install | **P2 – Medium** | `Dockerfile` | Infrastructure |
-| 11 | Healthcheck uses `curl` instead of Python | **P2 – Medium** | `docker-compose.yml` | Infrastructure |
-| 12 | `verify_signature()` silent on missing WEBHOOK_SECRET | **P2 – Medium** | `src/osapow/notifier/service.py` | Security |
-| 13 | Missing `issue_comment.created` action handling | **P2 – Medium** | `src/osapow/notifier/service.py` | Webhook Events |
-| 14 | Missing `pull_request_review` event support | **P2 – Medium** | `src/osapow/notifier/service.py` | Webhook Events |
-| 15 | `pyproject.toml` entry point uses async — needs sync wrapper | **P2 – Medium** | `pyproject.toml` | Packaging |
-| 16 | Traycerai bot edits trigger redundant orchestrator runs | **P3 – Low** | yankee89-b actions | Workflow Triggering |
-| 17 | `.labels.json` URLs point to `nam20485/AgentAsAService` (stale source) | **P3 – Low** | `.github/.labels.json` | Template Hygiene |
+| # | Issue | Severity | Location | Category | Status |
+|---|-------|----------|----------|----------|--------|
+| 1 | `issues: labeled` trigger is commented out in workflow YAML | **P0 – Blocker** | `.github/workflows/orchestrator-agent.yml` | Orchestrator Workflow | Not Started |
+| 2 | Template `.labels.json` missing all `agent:*` and workflow labels | **P0 – Blocker** | `.github/.labels.json` | Labels / Template | Not Started |
+| 3 | No PR created in yankee89-b despite 1h12m orchestrator run | **P1 – Critical** | yankee89-b repo | Project Setup Workflow | Not Started |
+| 4 | No GitHub Project created in yankee89-b | **P1 – Critical** | yankee89-b repo | Project Setup Workflow | Not Started |
+| 5 | Label set incomplete in yankee89-b (17 vs 24 needed) | **P1 – Critical** | yankee89-b labels | Labels | Not Started |
+| 6 | Sentinel claim markers block reclaim after restart (30-min stale timeout) | **P1 – Critical** | `src/osapow/sentinel/orchestrator.py` | Orchestrator Code | Not Started |
+| 7 | `SENTINEL_BOT_LOGIN` not validated at startup | **P1 – Critical** | `src/osapow/sentinel/orchestrator.py` | Orchestrator Code | Not Started |
+| 8 | Incomplete label cleanup during requeue | **P2 – Medium** | `src/osapow/queue/github_queue.py` | Queue / Labels | Not Started |
+| 9 | `GITHUB_TOKEN` not validated in notifier `create_app()` | **P2 – Medium** | `src/osapow/notifier/service.py` | Notifier Service | Not Started |
+| 10 | Docker COPY order breaks editable install | **P2 – Medium** | `Dockerfile` | Infrastructure | Not Started |
+| 11 | Healthcheck uses `curl` instead of Python | **P2 – Medium** | `docker-compose.yml` | Infrastructure | Not Started |
+| 12 | `verify_signature()` silent on missing WEBHOOK_SECRET | **P2 – Medium** | `src/osapow/notifier/service.py` | Security | Not Started |
+| 13 | Missing `issue_comment.created` action handling | **P2 – Medium** | `src/osapow/notifier/service.py` | Webhook Events | Not Started |
+| 14 | Missing `pull_request_review` event support | **P2 – Medium** | `src/osapow/notifier/service.py` | Webhook Events | Not Started |
+| 15 | `pyproject.toml` entry point uses async — needs sync wrapper | **P2 – Medium** | `pyproject.toml` | Packaging | Not Started |
+| 16 | Traycerai bot edits trigger redundant orchestrator runs | **P3 – Low** | yankee89-b actions | Workflow Triggering | Not Started |
+| 17 | `.labels.json` URLs point to `nam20485/AgentAsAService` (stale source) | **P3 – Low** | `.github/.labels.json` | Template Hygiene | Not Started |
+| 18 | Concurrent delegation artificially limited to 2 in orchestrator prompt | **P1 – Critical** | `.opencode/agents/orchestrator.md`, `AGENTS.md` | Orchestrator Prompt | Complete |
+| 19 | GitHub Project creation blocked — missing `project` OAuth scope | **P1 – Critical** | `orchestrator-agent.yml` permissions + PAT | Permissions | Complete |
+| 20 | Agent incorrectly assumes project is .NET-based | **P2 – Medium** | `create-project-structure` dynamic workflow | Workflow Definition | Not Started |
+| 21 | Orchestrator idle-kill exits code 0, masking failures; no SIGKILL escalation | **P1 – Critical** | `scripts/devcontainer-opencode.sh` | Watchdog / CI | Complete |
+| 22 | Watchdog race condition — premature idle-kill during active subagent work | **P1 – Critical** | `scripts/devcontainer-opencode.sh` | Watchdog | Complete |
 
 ---
 
@@ -39,6 +44,9 @@
 ---
 
 ### Issue 1: `issues: labeled` trigger is commented out in workflow YAML
+
+**Status:** Not Started
+**Remarks:**
 
 **Location:** `.github/workflows/orchestrator-agent.yml`, line 4
 
@@ -72,6 +80,9 @@ Add a condition in the job to skip runs for labels that aren't workflow-relevant
 ---
 
 ### Issue 2: Template `.labels.json` missing all `agent:*` and workflow labels
+
+**Status:** Not Started
+**Remarks:**
 
 **Location:** `.github/.labels.json`
 
@@ -119,6 +130,9 @@ Also remove the stale `id`, `node_id`, and `url` fields that point to `nam20485/
 
 ### Issue 3: No PR created in yankee89-b despite 1h12m orchestrator run
 
+**Status:** Not Started
+**Remarks:**
+
 **Location:** yankee89-b repository — 0 open/closed PRs
 
 **Description:**
@@ -142,6 +156,9 @@ The orchestrator ran due to the `workflow_run` trigger (prebuild devcontainer co
 
 ### Issue 4: No GitHub Project created in yankee89-b
 
+**Status:** Not Started
+**Remarks:**
+
 **Location:** yankee89-b repository — 0 projects
 
 **Description:**
@@ -163,6 +180,9 @@ Contrast with foxtrot54 which successfully created a project: "workflow-orchestr
 
 ### Issue 5: Label set incomplete in yankee89-b (17 vs 24 needed)
 
+**Status:** Not Started
+**Remarks:**
+
 **Location:** yankee89-b labels page
 
 **Description:**
@@ -179,6 +199,9 @@ yankee89-b has 17 labels. foxtrot54 has 24 labels. The difference includes the `
 ---
 
 ### Issue 6: Sentinel claim markers block reclaim after restart
+
+**Status:** Not Started
+**Remarks:**
 
 **Location:** `src/osapow/sentinel/orchestrator.py` (foxtrot54 codebase, produced by project-setup)
 
@@ -197,6 +220,9 @@ Per Codex review: `_cleanup()` now requeues the active task back to `agent:queue
 
 ### Issue 7: `SENTINEL_BOT_LOGIN` not validated at startup
 
+**Status:** Not Started
+**Remarks:**
+
 **Location:** `src/osapow/sentinel/orchestrator.py`, `main()` function
 
 **Description:**
@@ -212,6 +238,9 @@ Per Codex review: `main()` only validates `GITHUB_TOKEN`, `GITHUB_ORG`, and `GIT
 ---
 
 ### Issue 8: Incomplete label cleanup during requeue
+
+**Status:** Not Started
+**Remarks:**
 
 **Location:** `src/osapow/queue/github_queue.py`, `requeue_with_feedback()`
 
@@ -229,6 +258,9 @@ Per Codex review: `handle_github_webhook()` sends retries from `agent:reconcilin
 
 ### Issue 9: `GITHUB_TOKEN` not validated in notifier `create_app()`
 
+**Status:** Not Started
+**Remarks:**
+
 **Location:** `src/osapow/notifier/service.py`, `create_app()` function
 
 **Description:**
@@ -239,6 +271,9 @@ Per Codex review: `create_app()` always constructs `GitHubQueue` from `os.enviro
 ---
 
 ### Issue 10: Docker COPY order breaks editable install
+
+**Status:** Not Started
+**Remarks:**
 
 **Location:** `Dockerfile`
 
@@ -251,6 +286,9 @@ Per Codex review: `COPY src/ ./src/` must come before `uv pip install -e .` for 
 
 ### Issue 11: Healthcheck uses `curl` instead of Python
 
+**Status:** Not Started
+**Remarks:**
+
 **Location:** `docker-compose.yml`
 
 **Description:**
@@ -261,6 +299,9 @@ Per Codex review: The container doesn't include `curl`. Use a Python-based urlli
 ---
 
 ### Issue 12: `verify_signature()` silent on missing WEBHOOK_SECRET
+
+**Status:** Not Started
+**Remarks:**
 
 **Location:** `src/osapow/notifier/service.py`
 
@@ -273,6 +314,9 @@ Per Codex review: If `WEBHOOK_SECRET` is not configured, signature verification 
 
 ### Issue 13: Missing `issue_comment.created` action handling
 
+**Status:** Not Started
+**Remarks:**
+
 **Location:** `src/osapow/notifier/service.py`
 
 **Description:**
@@ -283,6 +327,9 @@ Per Codex review: The webhook handler didn't handle the `created` action for `is
 ---
 
 ### Issue 14: Missing `pull_request_review` event support
+
+**Status:** Not Started
+**Remarks:**
 
 **Location:** `src/osapow/notifier/service.py`
 
@@ -295,6 +342,9 @@ Per Codex review: `pull_request_review` events (submitted, edited) were not hand
 
 ### Issue 15: `pyproject.toml` entry point uses async — needs sync wrapper
 
+**Status:** Not Started
+**Remarks:**
+
 **Location:** `pyproject.toml`
 
 **Description:**
@@ -305,6 +355,9 @@ Per Codex review: Console script entry points must be synchronous functions. The
 ---
 
 ### Issue 16: Traycerai bot edits trigger redundant orchestrator runs
+
+**Status:** Not Started
+**Remarks:**
 
 **Location:** yankee89-b Actions tab
 
@@ -322,12 +375,143 @@ Orchestrator-agent runs #3-#6 were triggered by `traycerai` bot editing its comm
 
 ### Issue 17: `.labels.json` URLs point to `nam20485/AgentAsAService`
 
+**Status:** Not Started
+**Remarks:**
+
 **Location:** `.github/.labels.json`
 
 **Description:**
 The labels file was exported from a different repo (`nam20485/AgentAsAService`). The `id`, `node_id`, and `url` fields reference that repo. While `import-labels.ps1` only uses `name`, `color`, and `description`, the stale metadata is confusing.
 
 **Recommended fix:** Strip `id`, `node_id`, and `url` fields from `.labels.json`, keeping only `name`, `color`, and `description`.
+
+---
+
+### Issue 18: Concurrent delegation artificially limited to 2 in orchestrator prompt
+
+**Status:** Complete
+**Remarks:** Fixed in commit `bc4126c`. Validated in delta86 logs (model still echoes old behavior on pre-fix repos seeded before the fix).
+
+**Location:** `.opencode/agents/orchestrator.md`, `AGENTS.md`
+
+**Description:**
+The orchestrator agent was explicitly told to limit concurrent delegations to 2 in three places:
+1. `.opencode/agents/orchestrator.md` step 5: `Build delegation tree (≤2 concurrent)`
+2. `.opencode/agents/orchestrator.md` Delegation Depth Management: `Concurrent delegation limit: Maximum 2 concurrent delegations`
+3. `AGENTS.md` coding conventions: `Keep orchestrator delegation-depth ≤2`
+
+This is a prompt-level constraint only — opencode supports parallel Task tool calls natively with no hard limit. The model was obeying the instruction literally, serializing independent tasks unnecessarily.
+
+Log evidence (delta86):
+
+```
+Let me delegate these tasks. I can delegate up to 2 tasks concurrently.
+• Update .labels.json with agent labels  →  Developer Agent
+• Create GitHub Project for tracking     →  Github-Expert Agent
+```
+
+**Fix applied:** Removed all three concurrent-limit references. The depth limit (max 2 nesting levels) is preserved since that controls nesting depth, not parallelism.
+
+---
+
+### Issue 19: GitHub Project creation blocked — missing `project` OAuth scope
+
+**Status:** Complete
+**Remarks:** Fixed in commit `7f835c0`. `projects: write` added to workflow permissions; `GH_ORCHESTRATION_AGENT_TOKEN` PAT must also have the `project` scope (verify via `gh auth refresh -h github.com -s project`).
+
+**Location:** `.github/workflows/orchestrator-agent.yml` permissions block; `GH_ORCHESTRATION_AGENT_TOKEN` PAT settings
+
+**Description:**
+GitHub Projects V2 uses the GraphQL API, which requires the `project` OAuth scope. The workflow permissions block was missing `projects: write`. Additionally, the built-in `GITHUB_TOKEN` cannot manage Projects V2 at all — only a classic PAT with the `project` scope can.
+
+Log evidence (delta86):
+
+```
+Github-Expert: "GITHUB_TOKEN doesn't have permission to create projects"
+```
+
+**Fix applied:** Added `projects: write` to the `orchestrator-agent.yml` permissions block.
+
+---
+
+### Issue 20: Agent incorrectly assumes project is .NET-based
+
+**Status:** Not Started
+**Remarks:**
+
+**Location:** `create-project-structure` dynamic workflow definition (remote: `nam20485/agent-instructions`)
+
+**Description:**
+The `create-project-structure` assignment template appears to include .NET-specific examples (`.sln`, `.csproj` structure). When the orchestrator delegates this assignment for a Python/FastAPI project, subagents have explicitly noted the mismatch:
+
+Log evidence:
+
+```
+• Execute create-project-structure  Backend-Developer Agent
+Now executing Assignment 3: create-project-structure. This requires Python adaptation
+as the assignment is designed for .NET.
+```
+
+This is also flagged as Open Question 6.1 in `plan_docs/workflow-plan.md`:
+> *"The planning documents describe a Python/FastAPI system, but `create-project-structure` assignment mentions .NET solution structure in its example."*
+
+**Proposed Solutions:**
+
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **A (Recommended)** | Update the `create-project-structure` dynamic workflow in `agent-instructions` repo to be tech-stack-agnostic, reading the tech stack from planning docs | Correct for all future repos | Requires updating remote canonical workflow |
+| B | Add a note in the assignment prompt that the .NET example is illustrative and agents must adapt to the actual tech stack | Low effort | Relies on agent correctly interpreting the note |
+| C | Create a separate `create-project-structure-python` workflow variant | Tailored | Proliferates workflow variants |
+
+---
+
+### Issue 21: Orchestrator idle-kill exits code 0, masking failures; no SIGKILL escalation
+
+**Status:** Complete
+**Remarks:** Fixed in commit `cafd0b0`. End-to-end validated in yankee89-a (run 23352743760, exit code 0, 7/7 assignments completed).
+
+**Location:** `scripts/devcontainer-opencode.sh` (watchdog / wrapper logic)
+
+**Description:**
+Three related infrastructure bugs:
+1. **Exit code masking:** Idle-killed runs exited 0, making GitHub Actions report "succeeded" despite incomplete work.
+2. **`::warning::` → `::error::`:** Idle kills and hard-ceiling kills are failures — were annotated as `::warning::` so they didn't surface prominently in the workflow summary.
+3. **No SIGTERM→SIGKILL escalation:** After sending SIGTERM, the wrapper didn't follow up with SIGKILL if the process failed to exit, allowing zombie/hung processes.
+
+Log evidence (india42):
+
+```
+Warning: opencode idle for 15m (no output from client or server); terminating
+opencode exit code: 143                     ← SIGTERM received
+Notice: devcontainer-opencode.sh exited with code: 0   ← BUG: should be non-zero
+```
+
+**Fix applied:** (a) Wrapper now exits 1 when watchdog fires. (b) Idle/ceiling kills annotated as `::error::`. (c) Sends SIGKILL after 10s if process hasn't exited following SIGTERM.
+
+---
+
+### Issue 22: Watchdog race condition — premature idle-kill during active subagent work
+
+**Status:** Complete
+**Remarks:** Fixed in commit `5d89c97`. End-to-end validated in yankee89-a (run 23352743760): watchdog survived 225s and 292s client-idle periods across 7 delegations without premature kills.
+
+**Location:** `scripts/devcontainer-opencode.sh` (watchdog loop)
+
+**Description:**
+Race condition in the watchdog loop. When checking server activity via `/proc/<pid>/io write_bytes`, a single 30-second interval where `write_bytes` didn't change caused `server_io_active` to flip to `false`. The fallback used `server_log_idle` (mtime of `/tmp/opencode-serve.log`), which only reflected server **startup** time — not last activity. So `server_idle` jumped from 0 to the full runtime (~950s), immediately triggering the 15m idle kill even though the server was actively working 30 seconds earlier.
+
+Log evidence (india42 — buggy behavior):
+
+```
+11:44:44 [watchdog] client output idle 886s, server I/O active (write_bytes=146317312) — subagent likely running
+11:45:14 Warning: opencode idle for 15m (no output from client or server); terminating
+```
+
+Server I/O was active at 11:44:44. One 30s check later, write_bytes didn't change → `server_idle` jumped to ~952s → killed prematurely.
+
+**Why golf43 succeeded (golden run):** Same code, same template. golf43 ran 1h 4m and completed all tasks. It never had a 30-second I/O gap at a moment when client output idle exceeded 15m — timing-dependent race condition.
+
+**Fix applied:** Track `_last_server_io_time` (timestamp of last observed I/O activity) instead of falling back to server log mtime. The process is only killed when server I/O has been truly inactive for a full 15 minutes since it was last observed.
 
 ---
 
@@ -359,3 +543,14 @@ The labels file was exported from a different repo (`nam20485/AgentAsAService`).
 2. **Fix healthcheck** (Issue 11)
 3. **Fix entry point** (Issue 15)
 4. **Add missing event handlers** (Issues 13, 14)
+
+### Already Fixed (historical record)
+
+- **Issue 18** — Concurrent delegation limit removed from orchestrator prompt (`bc4126c`)
+- **Issue 19** — `projects: write` added to workflow permissions + PAT scope clarified (`7f835c0`)
+- **Issue 21** — Watchdog exit-code masking + `::error::` annotation + SIGKILL escalation (`cafd0b0`)
+- **Issue 22** — Watchdog race condition fixed via `_last_server_io_time` tracking (`5d89c97`)
+
+### Issue 20 — Backlog (open)
+
+- **Issue 20** — Investigate and fix `.NET` assumptions in `create-project-structure` dynamic workflow
