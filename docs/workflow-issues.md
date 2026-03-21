@@ -63,7 +63,7 @@ Now executing **Assignment 3: create-project-structure**. This requires Python a
 
 ## P4: /orchestrate-project-setup timeout and completion issues
 
-**Status: FIXED** (commit TBD in `ai-new-workflow-app-template`) — three infrastructure bugs fixed:
+**Status: FIXED & VALIDATED** (commit `cafd0b0`) — three infrastructure bugs fixed, end-to-end validated in yankee89-a (run 23352743760, exit code 0, 7/7 assignments completed):
 1. **Exit code masking**: Idle-killed runs exited 0, making GitHub Actions report "succeeded" despite incomplete work. Now exits 1.
 2. **`::warning::` → `::error::`**: Idle kills and hard-ceiling kills are failures — annotated as `::error::` so they surface in the workflow summary.
 3. **SIGTERM→SIGKILL escalation**: After sending SIGTERM, waits 10s then sends SIGKILL if the process hasn't exited, preventing zombie/hung processes.
@@ -112,7 +112,7 @@ THIS ISTIME OUT DOING NOTHGING -->> <https://github.com/intel-agency/workflow-or
 
 ## P5: Watchdog race condition causing premature idle-kill during subagent work
 
-**Status: FIXED** (commit `5d89c97` in `ai-new-workflow-app-template`)
+**Status: FIXED & VALIDATED** (commit `5d89c97` in `ai-new-workflow-app-template`) — end-to-end validated in yankee89-a (run 23352743760): watchdog survived 225s and 292s client-idle periods across 7 delegations without premature kills
 
 **Root Cause:** Race condition in `run_opencode_prompt.sh` watchdog loop. When checking server activity via `/proc/<pid>/io write_bytes`, a single 30-second interval where `write_bytes` didn't change caused `server_io_active` to flip to `false`. The fallback used `server_log_idle` (mtime of `/tmp/opencode-serve.log`), which only reflected server **startup** time — not last activity. So `server_idle` jumped from 0 to the full runtime (~950s), immediately triggering the 15m idle kill even though the server was actively working 30 seconds earlier.
 
@@ -127,7 +127,7 @@ Server I/O was confirmed active at 11:44:44. One 30s check later, write_bytes di
 
 **Fix:** Track `_last_server_io_time` (timestamp of last observed I/O activity) instead of falling back to server log mtime. When `/proc/io` is available but `write_bytes` doesn't change for one interval, compute `server_idle = now - _last_server_io_time` (e.g., 30s) instead of `server_idle = server_log_idle` (e.g., 952s). The process is only killed when server I/O has been truly inactive for a full 15 minutes since the last time it was observed.
 
-**Validation:** Pending — new queue repos created from the updated template will pick up the fix. Use `DEBUG_ORCHESTRATOR=true` repo variable + `DEBUG` keyword in trigger issue body for full watchdog diagnostics including the new `last_io=Ns_ago` field.
+**Validation:** PASSED — yankee89-a (run 23352743760) completed all 7 project-setup assignments with zero premature kills. Watchdog survived extended client-idle periods (225s, 292s) during subagent delegations, correctly tracking `_last_server_io_time` and reporting "subagent likely running". Final exit code: 0.
 
 <https://github.com/intel-agency/workflow-orchestration-queue-india42>
 
