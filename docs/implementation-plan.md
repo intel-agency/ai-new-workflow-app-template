@@ -98,7 +98,7 @@ Of 22 issues, the owner's remarks produced the following disposition:
    - Includes proper error handling and output
    - Can be run standalone by a human or future automation
 2. **Do NOT** auto-call it from `trigger-project-setup.ps1` or the orchestration workflow.
-3. **Add prominent directions** in multiple locations explaining:
+~3. **Add prominent directions** in multiple locations explaining:
    - When to run `create-project.ps1` (after devcontainer image is built and first orchestrator run completes)
    - How to run it (`./scripts/create-project.ps1 -Org <org> -Repo <repo>`)
 4. Increase visibility of these directions in:
@@ -106,6 +106,8 @@ Of 22 issues, the owner's remarks produced the following disposition:
    - The orchestrator prompt or workflow plan docs
    - The project-setup dynamic workflow instructions (so subagents know about it)
 5. Mark Issue 4 as **Complete** in the doc.
+
+**CHANGE: DONT ADD ANY EXTRA STEPS ANYWHERE ELSE. Just create the script and add directns to call it with how in the same spot where the project creation directions already exist (i.e. in the workfow assignemnt). Just add more visibility in or around that spot in the existing workflow assignment file. Add to Acceptance Criteria ormake more prominent if its already there.**
 
 **Files:**
 
@@ -252,9 +254,13 @@ These issues are explicitly deferred per owner direction:
 ## Approval
 
 - [ ] Plan approved — proceed with implementation
-- [ ] Plan approved with modifications (see below)
+- [x] Plan approved with modifications (see below)
 - [ ] Plan rejected — revise
 
 **Modifications requested:**
+
+See item 4. All other items are approved as presented.
+
+For the external repos.
 
 _(space for feedback)_
