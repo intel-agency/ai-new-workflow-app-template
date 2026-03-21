@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Prefer the cross-repo PAT over the Actions GITHUB_TOKEN for gh CLI.
+# The opencode server daemon inherits this env; subagents it spawns will
+# therefore use the PAT.  Events triggered by a PAT (unlike GITHUB_TOKEN)
+# DO create new workflow runs, so label additions etc. correctly re-trigger
+# orchestrator-agent.yml.
+if [[ -n "${GH_ORCHESTRATION_AGENT_TOKEN:-}" ]]; then
+    export GH_TOKEN="${GH_ORCHESTRATION_AGENT_TOKEN}"
+fi
+
 OPENCODE_SERVER_HOSTNAME="${OPENCODE_SERVER_HOSTNAME:-0.0.0.0}"
 OPENCODE_SERVER_PORT="${OPENCODE_SERVER_PORT:-4096}"
 OPENCODE_SERVER_LOG="${OPENCODE_SERVER_LOG:-/tmp/opencode-serve.log}"
