@@ -225,7 +225,7 @@ jobs:
             --workspace-folder . \
             --config .devcontainer/devcontainer.json \
             -- bash -c "tar -cf - -C /tmp/trace-bundle ." | tar -xf - -C /tmp/trace-artifacts/ 2>/dev/null || true
-          echo "Trace artifacts collected: $(ls -1 /tmp/trace-artifacts/ 2>/dev/null | wc -l) files"
+          echo "Trace artifacts collected: $(find /tmp/trace-artifacts/ -maxdepth 1 -type f 2>/dev/null | wc -l) files"
 
       - name: Upload trace artifacts
         if: always()
