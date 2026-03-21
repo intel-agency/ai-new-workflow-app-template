@@ -117,10 +117,12 @@ THIS ISTIME OUT DOING NOTHGING -->> <https://github.com/intel-agency/workflow-or
 **Root Cause:** Race condition in `run_opencode_prompt.sh` watchdog loop. When checking server activity via `/proc/<pid>/io write_bytes`, a single 30-second interval where `write_bytes` didn't change caused `server_io_active` to flip to `false`. The fallback used `server_log_idle` (mtime of `/tmp/opencode-serve.log`), which only reflected server **startup** time — not last activity. So `server_idle` jumped from 0 to the full runtime (~950s), immediately triggering the 15m idle kill even though the server was actively working 30 seconds earlier.
 
 **Evidence from india42 log:**
+
 ```
 11:44:44 [watchdog] client output idle 886s, server I/O active (write_bytes=146317312) — subagent likely running
 11:45:14 Warning: opencode idle for 15m (no output from client or server); terminating
 ```
+
 Server I/O was confirmed active at 11:44:44. One 30s check later, write_bytes didn't change (normal during LLM API inference pause) → `server_idle` jumped to ~952s → killed.
 
 **Why golf43 succeeded (golden run):** Same code, same template. golf43 ran for 1h 4m and completed all project-setup tasks. It simply never had a 30-second I/O gap at a moment when client output idle exceeded 15m. The bug is timing-dependent — a race condition.
