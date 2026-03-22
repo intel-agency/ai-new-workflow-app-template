@@ -66,6 +66,16 @@ This repository is a **template for AI-assisted application development**. The a
 3. **Automation Layer**: Repository operations performed through MCP tools, `gh` CLI, terminal commands, scripts, and GitHub API
 4. **Workflow Orchestration**: Dynamic workflows resolved from remote canonical sources
 
+### GitHub Actions: SHA-Pinned Actions (MANDATORY)
+
+Every `uses:` line in workflow files **MUST** reference the full 40-char commit SHA of the latest release. Tag refs (`@v4`, `@main`) are **prohibited** — mutable tags are a supply-chain attack vector.
+
+Format: `uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2`
+
+- Trailing `# vX.Y.Z` comment is mandatory for readability
+- Applies to all actions: third-party, `actions/*`, `github/*`, reusable workflows
+- Not enforced by `actionlint` — manual discipline via code review and agent instructions
+
 ### Tool Preference for GitHub Operations
 
 1. **MCP GitHub Tools** (`mcp_github_*` functions) - Use first
