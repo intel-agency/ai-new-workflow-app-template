@@ -75,6 +75,7 @@ fi
 export GH_TOKEN="${_active_token}"
 export GITHUB_TOKEN="${_active_token}"
 export GITHUB_PERSONAL_ACCESS_TOKEN="${_active_token}"
+export OPENCODE_EXPERIMENTAL=1
 
 # Validate the token is accepted by the API and check required scopes.
 # --include surfaces response headers; X-OAuth-Scopes lists granted scopes.
