@@ -102,10 +102,31 @@ These are reusable procedures referenced by the clause logic below. When a claus
         {
           - $implement_epic = extract_epic_from_title(title)
           - if $implement_epic is null or empty → comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
+
+          ## Per-Epic 4-Step Orchestration Sequence
+          ## Step 1: Implement the epic (code, tests, open PRs)
           - /orchestrate-dynamic-workflow
                $workflow_name = implement-epic { $epic = $implement_epic }
+          - if implement-epic fails → comment on the issue with failure details, skip to ##Final.
 
-          - if the dynamic workflow completes successfully, add the "implementation:complete" label to the issue to mark it as complete
+          ## Step 2: Review, approve, and merge all PRs for this epic
+          ## This step handles: CI verification & remediation, code review delegation,
+          ## auto-reviewer wait, PR comment resolution, and merge execution.
+          - /orchestrate-dynamic-workflow
+               $workflow_name = review-epic-prs { $epic = $implement_epic }
+          - if review-epic-prs fails → comment on the issue with failure details, skip to ##Final.
+
+          ## Step 3: Debrief and capture findings
+          ## Lightweight: report progress, flag deviations, note plan-impacting discoveries.
+          - Execute the `report-progress` assignment for this epic.
+          - Review the report for any ACTION ITEMS (deviations, new findings, plan-impacting issues).
+          - If ACTION ITEMS are found:
+            - File issues for newly-discovered required work.
+            - Update descriptions of upcoming epics/phases if needed.
+          - Execute the `debrief-and-document` assignment to record learnings.
+
+          ## Step 4: Mark complete and advance
+          - if all steps above completed successfully, add the "implementation:complete" label to the issue to mark it as complete
         }
 
 case (type = issues &&
