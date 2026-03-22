@@ -30,13 +30,14 @@ jobs:
     # When this job runs, its step outputs the event details and explains the skip.
     # Skip cases:
     #   1. traycerai[bot] actor — avoid feedback loops
-    #   2. labeled events for non-workflow labels — only implementation:ready
-    #      and implementation:complete should trigger the orchestrator
+    #   2. labeled events for non-workflow labels — only orchestration:plan-approved,
+    #      implementation:ready, and implementation:complete should trigger the orchestrator
     runs-on: ubuntu-24.04
     if: >-
       github.actor == 'traycerai[bot]' ||
       (github.event_name == 'issues' &&
        github.event.action == 'labeled' &&
+       github.event.label.name != 'orchestration:plan-approved' &&
        github.event.label.name != 'implementation:ready' &&
        github.event.label.name != 'implementation:complete')
     steps:
