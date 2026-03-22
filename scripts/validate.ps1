@@ -63,7 +63,7 @@ function Invoke-Check {
     }
     catch {
         $script:Failures += $Name
-        Write-Host "  FAIL: $_" -ForegroundColor Red
+        Write-Host "  FAIL: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
