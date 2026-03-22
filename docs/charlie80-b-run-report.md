@@ -175,14 +175,14 @@ The orchestrator executed a full Phase 0 + Phase 1 implementation sequence:
 
 ### What Was Missed or Left Incomplete
 
-| Gap | Severity | Description |
-|-----|----------|-------------|
-| **Issue #7 not closed** | Low | Has `implementation:complete` label but GitHub state is OPEN. The orchestrator labeled it but didn't close it — likely a label-vs-close race condition or the close action was omitted. |
-| **Issue #15 (Task 0.3) not started** | Medium | DevContainer initialization epic was created but no PR was ever opened for it. The orchestrator runs for this issue either skipped (correct — DevContainer init is a runtime concern, not a code task) or failed. |
-| **Issue #2 duplicate of #4** | Low | Two nearly identical "Complete Implementation" tracker issues exist. #2 and #4 both have the same title. Neither is closed. |
-| **PR #1 still open** | Low | The project-setup PR was never merged. This is expected — it's the initial bootstrap PR that gets superseded by the individual feature PRs merged directly. |
-| **Gitleaks false positive** | Medium | `tests/test_work_item.py` contains a fake `sk-` key that fails gitleaks. validate failed on PR #13 and its merge commit. The code was merged despite the failure. |
-| **Python CI failure** | Low | A `Python CI` workflow (likely agent-created) failed on PR #1. Not blocking since the work continued via other PRs. |
+| Gap | Severity | Description | Catalog Ref |
+|-----|----------|-------------|-------------|
+| **Issue #7 not closed** | Low | Has `implementation:complete` label but GitHub state is OPEN. The orchestrator labeled it but didn't close it — likely a label-vs-close race condition or the close action was omitted. | ISSUE-3 |
+| **Issue #15 (Task 0.3) not started** | Medium | DevContainer initialization epic was created but no PR was ever opened for it. Agent went idle for 15m and was killed by watchdog. Task is a runtime concern, not a code task — the agent couldn't produce a deliverable. | ISSUE-4 |
+| **Issue #2 duplicate of #4** | Low | Two nearly identical "Complete Implementation" tracker issues exist. #2 and #4 both have the same title. Neither is closed. | ISSUE-5 |
+| **PR #1 still open** | Low | The project-setup PR was never merged. This is expected — it's the initial bootstrap PR that gets superseded by the individual feature PRs merged directly. | ISSUE-6 |
+| **Gitleaks false positive** | Medium | `tests/test_work_item.py` contains a fake `sk-` key that fails gitleaks. validate failed on 5 runs across PRs #8, #13, #16. The code was merged despite failures. | ISSUE-1 |
+| **Python CI failure** | Low | A `Python CI` workflow failed on PR #1 due to missing `README.md` in the Docker build. Not blocking since the workflow is disabled and work continued via other PRs. | ISSUE-7 |
 
 ### Spurious Orchestrator Runs
 
@@ -192,17 +192,17 @@ The orchestrator workflow fires on every `issues` event (opened, labeled, closed
 
 ## Failure Root Causes
 
-| # | Workflow | Trigger | Root Cause | Impact |
-|---|----------|---------|------------|--------|
-| 1 | Python CI | PR #1 | Agent-generated Python workflow ran against incomplete scaffolding | None — work continued |
-| 2 | validate | PR #8 | Unknown lint/scan issue in template verification script | PR merged despite failure |
-| 3 | validate | PR #8 merge | Same as above (push to main) | None |
-| 4 | validate | PR #13 | **Gitleaks**: fake `sk-1234567890abcdefghijklmnopqrstuv` in `tests/test_work_item.py:90` | PR merged despite failure |
-| 5 | validate | PR #13 merge | Same gitleaks issue (push to main) | None |
-| 6 | orchestrator | Issue #15 | 1 of 3 runs failed (Task 0.3 DevContainer init) | Issue left OPEN, not implemented |
-| 7 | validate | PR #16 (1st) | Validation failure in sentinel polling code; agent self-healed with fix push | Resolved by retry |
-| 8 | orchestrator | Issue #19 | Bash syntax error in agent-modified `devcontainer-opencode.sh:255` — `unexpected token '('` | Work already completed (exit 0), cosmetic failure |
-| 9 | orchestrator | Issue #19 | Re-trigger after PR merge; empty prompt → `You must provide a message` + `bc: command not found` | Spurious, task was already done |
+| # | Workflow | Trigger | Root Cause | Impact | Catalog Ref |
+|---|----------|---------|------------|--------|-------------|
+| 1 | Python CI | PR #1 | Missing `README.md` during Docker editable install (`hatchling` build backend) | None — workflow disabled | ISSUE-7 |
+| 2 | validate | PR #8 | Gitleaks: fake `sk-` key in `tests/test_work_item.py:90` (false positive) | PR merged despite failure | ISSUE-1 |
+| 3 | validate | PR #8 merge | Same gitleaks false positive (push to main) | None | ISSUE-1 |
+| 4 | validate | PR #13 | Same gitleaks false positive | PR merged despite failure | ISSUE-1 |
+| 5 | validate | PR #13 merge | Same gitleaks false positive (push to main) | None | ISSUE-1 |
+| 6 | orchestrator | Issue #15 | Agent idle 15m on runtime-verification task (no code deliverable) → watchdog SIGTERM | Issue left OPEN, not implemented | ISSUE-4 |
+| 7 | validate | PR #16 (1st) | Same gitleaks false positive; agent self-healed with fix push, 2nd attempt passed | Resolved by retry | ISSUE-1 |
+| 8 | orchestrator | Issue #19 | Agent modified `devcontainer-opencode.sh` in-place during execution → bash syntax error at old byte offset | Work completed (exit 0), cosmetic failure | ISSUE-8 |
+| 9 | orchestrator | Issue #19 | Re-trigger on completed issue; empty/malformed prompt → `no message` + `bc: command not found` | Spurious, task already done | ISSUE-9 |
 
 ---
 
@@ -256,12 +256,141 @@ The orchestrator workflow fires on every `issues` event (opened, labeled, closed
 
 ---
 
-## Recommendations
+## Issues Catalog
 
-1. **Close Issue #7** — It has `implementation:complete` but wasn't closed by the orchestrator.
-2. **Triage Issue #15 (Task 0.3)** — DevContainer initialization was never attempted. Decide whether to re-trigger or close as out-of-scope for the current orchestrator flow (since DevContainer init is a runtime/infra concern).
-3. **Close or merge PR #1** — The project-setup PR is stale; all its work was delivered through feature PRs #5, #8, #13, #16, #18, #20.
-4. **Template fix: `.gitleaks.toml`** — Already prepared in the template to allowlist synthetic test fixture secrets.
-5. **Template fix: `validate.ps1`** — Error display bug fixed (`$_` → `$_.Exception.Message`) so gitleaks findings are visible in CI.
-6. **Template fix: `AGENTS.md`** — Added directive telling agents to avoid real-looking secret prefixes in test fixtures.
-7. **Investigate bash syntax error** — The agent-modified `devcontainer-opencode.sh` in charlie80-b has a syntax error on line 255. This is in the generated repo, not the template.
+### ISSUE-1: Gitleaks false positive on synthetic test fixture
+
+| Field | Detail |
+|-------|--------|
+| **Severity** | Medium |
+| **Where** | `tests/test_work_item.py:90` (charlie80-b, commit `bbeea4e`) |
+| **Workflow** | `validate` — scan job, `gitleaks detect` step |
+| **Runs affected** | `23393669406` (PR #8), `23393712348` (PR #8 merge), `23393952838` (PR #13), `23394022749` (PR #13 merge), `23395141930` (PR #16 1st attempt) |
+| **Error output** | `FAIL: System.Management.Automation.RemoteException` / `leaks found: 1` |
+| **Root cause** | Agent-generated test for `scrub_secrets()` used a fake OpenAI-style key `sk-1234567890abcdefghijklmnopqrstuv` as test input. Gitleaks `generic-api-key` rule flagged it (entropy 5.01). This is a **false positive** — the key is synthetic test data, not a real credential. |
+| **Impact** | All validate runs that scan git history hit this. PRs were merged despite the failure because branch protection wasn't strict. |
+| **Fix (template)** | **APPLIED** in commit `408339f`: (1) `.gitleaks.toml` with allowlist for `sk-1234567890abcdef` scoped to `tests/test_work_item.py`, (2) `AGENTS.md` directive telling agents to avoid real-looking secret prefixes (`sk-`, `ghp_`, `ghs_`, `AKIA`) in test fixtures, (3) `validate.ps1` bug fix: `$_` → `$_.Exception.Message` so gitleaks findings are visible in CI logs instead of showing `System.Management.Automation.RemoteException`. |
+| **Fix (charlie80-b)** | Copy `.gitleaks.toml` from template into the repo. Alternatively, rewrite the test to use obviously fake values like `FAKE-KEY-FOR-TESTING-00000000`. |
+
+---
+
+### ISSUE-2: validate.ps1 error display swallows gitleaks finding details
+
+| Field | Detail |
+|-------|--------|
+| **Severity** | Medium |
+| **Where** | `scripts/validate.ps1`, `Invoke-Check` function (line 65 in template) |
+| **Error output** | `FAIL: System.Management.Automation.RemoteException` instead of the actual gitleaks output |
+| **Root cause** | The catch handler used `Write-Host " FAIL: $_"`. In PowerShell, when an exception is thrown from a string (the joined gitleaks output), `$_` stringifies to the exception type name, not the message content. |
+| **Impact** | All gitleaks failures showed only the exception type, making it impossible to diagnose the finding from CI logs alone. Required cloning the repo and running gitleaks locally. |
+| **Fix (template)** | **APPLIED** in commit `408339f`: Changed to `Write-Host " FAIL: $($_.Exception.Message)"`. |
+| **Fix (charlie80-b)** | Will automatically pick up template fix on next template sync. |
+
+---
+
+### ISSUE-3: Issue #7 (Task 1.2 – WorkItem Model) left OPEN despite completion
+
+| Field | Detail |
+|-------|--------|
+| **Severity** | Low |
+| **Where** | GitHub issue tracker — Issue #7 in charlie80-b |
+| **What happened** | The orchestrator applied the `implementation:complete` label to Issue #7 but never closed the issue via `gh issue close`. Issue #7 (Task 1.2 WorkItem Model) was implemented as part of the project structure in commit `bbeea4e` and later enhanced in commit `3f7a5a7`. |
+| **Root cause** | The orchestrator's close-issue logic has a gap: it labels issues as complete but doesn't consistently follow up with a close operation. This may be a timing issue (label applied, then the run ended before the close command) or an instruction gap in the orchestrator agent prompt. |
+| **Impact** | Milestone progress reporting shows Task 1.2 as incomplete when it's actually done. |
+| **Recommended fix** | `gh issue close 7 --repo intel-agency/workflow-orchestration-queue-charlie80-b --reason completed` |
+| **Template fix** | Consider adding an explicit instruction in the orchestrator agent prompt: "After labeling an issue `implementation:complete`, always close it with `gh issue close`." |
+
+---
+
+### ISSUE-4: Issue #15 (Task 0.3 – DevContainer Init) never implemented
+
+| Field | Detail |
+|-------|--------|
+| **Severity** | Medium |
+| **Where** | GitHub issue #15, orchestrator run `23394201761` |
+| **Error output** | `opencode idle for 15m (no output from client or server); terminating` / `opencode exit code: 143` (SIGTERM) |
+| **Root cause** | The orchestrator picked up Issue #15 (DevContainer initialization) but the agent went idle — no client or server output for 15 minutes, triggering the watchdog timeout. Task 0.3 asks the agent to "start the devcontainer and verify tools" which is a **runtime/infra task**, not a code-writing task. The AI agent likely couldn't figure out what code to produce and stalled. |
+| **Impact** | DevContainer initialization was never verified. Phase 0 milestone is incomplete (2/3 tasks done). |
+| **Recommended fix** | Either: (A) Close Issue #15 as out-of-scope — DevContainer init is implicitly verified by every subsequent orchestrator run that successfully starts a devcontainer. Tasks 1.3–1.5 all proved the devcontainer works. Or (B) rewrite the issue body to be a code-deliverable task (e.g., "create a `test/test-devcontainer-health.sh` script") and re-trigger. |
+| **Template fix** | Consider adding guidance to the plan-creation agent: "Do not create issues for runtime verification tasks that have no code deliverable. DevContainer health is validated implicitly by every orchestrator run." |
+
+---
+
+### ISSUE-5: Duplicate tracker issues #2 and #4
+
+| Field | Detail |
+|-------|--------|
+| **Severity** | Low |
+| **Where** | GitHub issues #2 and #4, both titled "workflow-orchestration-queue – Complete Implementation (Application Plan)" |
+| **Root cause** | The planning orchestrator created two nearly identical "Complete Implementation" tracker issues. Issue #2 was created at 01:38 and #4 at 01:51. Both have `implementation:ready` labels and neither is closed. Likely a duplicate creation during the initial planning phase when the orchestrator ran multiple times for the same event. |
+| **Impact** | Confusing issue tracker. Neither serves as a clean parent tracker. |
+| **Recommended fix** | Close Issue #2 as duplicate: `gh issue close 2 --repo intel-agency/workflow-orchestration-queue-charlie80-b --reason "not planned" --comment "Duplicate of #4"` |
+
+---
+
+### ISSUE-6: PR #1 (project-setup) still open
+
+| Field | Detail |
+|-------|--------|
+| **Severity** | Low |
+| **Where** | PR #1, branch `dynamic-workflow-project-setup` |
+| **Root cause** | The project-setup workflow creates PR #1 as a staging area. All actual work was delivered through feature PRs (#5, #8, #13, #16, #18, #20) merged directly to main. PR #1 was never merged because the individual PRs superseded it. The orchestrator doesn't have a "close stale project-setup PR" step. |
+| **Impact** | Stale open PR in the repo. The branch diverges significantly from main. |
+| **Recommended fix** | Close without merging: `gh pr close 1 --repo intel-agency/workflow-orchestration-queue-charlie80-b --comment "Superseded by feature PRs #5, #8, #13, #16, #18, #20"` |
+| **Template fix** | Consider adding a debrief step to the orchestrator that closes the project-setup PR after all epics complete. |
+
+---
+
+### ISSUE-7: Python CI workflow failure on Docker build
+
+| Field | Detail |
+|-------|--------|
+| **Severity** | Low |
+| **Where** | `Python CI` workflow, run `23393438738`, PR #1 |
+| **Error output** | `OSError: Readme file does not exist: README.md` during `uv pip install --no-cache -e .` in Dockerfile |
+| **Root cause** | The agent created a Python CI workflow and Dockerfile that attempted an editable install (`uv pip install -e .`). The `hatchling` build backend requires `README.md` referenced in `pyproject.toml`, but the file didn't exist at that point in the PR branch. |
+| **Impact** | None — the Python CI workflow is in `.github/workflows/.disabled/` and the work continued through other PRs. |
+| **Recommended fix** | No action needed. If the Python CI workflow is re-enabled, ensure `README.md` exists or remove it from `pyproject.toml`'s `[project]` table. |
+
+---
+
+### ISSUE-8: Bash syntax error in devcontainer-opencode.sh during Task 1.5 execution
+
+| Field | Detail |
+|-------|--------|
+| **Severity** | Low |
+| **Where** | `scripts/devcontainer-opencode.sh:255`, orchestrator run `23395766201` |
+| **Error output** | `./scripts/devcontainer-opencode.sh: line 255: syntax error near unexpected token '('` / exit code 2 |
+| **Root cause** | The Task 1.5 agent (shell-bridge dispatcher) **modified `devcontainer-opencode.sh` while it was being executed by bash**. The opencode CLI finished (exit code 0 — the work was done), but the `devcontainer-opencode.sh` script that was wrapping it had been rewritten in-place. When bash continued parsing the file after the opencode subprocess exited, it encountered new syntax at the old byte offset, causing a parse error. This is a classic "modify a running shell script" race condition. |
+| **Impact** | Cosmetic — the PR (#20) was created and merged successfully. The work was complete. The failure is only in the post-execution cleanup path. |
+| **Recommended fix** | No fix needed for charlie80-b (the merged file is syntactically correct). For the template: consider adding a guard in `devcontainer-opencode.sh` that copies itself to a temp location and `exec`s the copy, so in-place modifications by agents don't affect the running process. |
+
+---
+
+### ISSUE-9: Spurious orchestrator re-trigger on completed issue
+
+| Field | Detail |
+|-------|--------|
+| **Severity** | Low |
+| **Where** | Orchestrator run `23396030587`, triggered by Issue #19 label change after PR #20 merge |
+| **Error output** | `Error: You must provide a message or a command` + `bc: command not found` (exit 127) |
+| **Root cause** | After PR #20 merged, a label was applied to Issue #19 (e.g., `implementation:complete`), which triggered another `issues` event. The orchestrator picked it up, but the issue was already done — the assembled prompt was malformed or empty, causing opencode to reject it. The `bc` error is a secondary issue: the `run_opencode_prompt.sh` timing calculation uses `bc` which isn't installed in the devcontainer. |
+| **Impact** | None — the task was already complete. |
+| **Recommended fix** | (1) The `skip-event` filter in `orchestrator-agent.yml` should check for the `implementation:complete` label and skip runs where the issue is already done. (2) Install `bc` in the devcontainer Dockerfile or replace the timing calculation with bash arithmetic. |
+
+---
+
+## Recommendations Summary
+
+| # | Action | Target | Priority | Status |
+|---|--------|--------|----------|--------|
+| 1 | Add `.gitleaks.toml` allowlist for synthetic test secrets | Template | High | **DONE** (`408339f`) |
+| 2 | Fix `validate.ps1` error display (`$_` → `$_.Exception.Message`) | Template | High | **DONE** (`408339f`) |
+| 3 | Add AGENTS.md directive: avoid real secret prefixes in test fixtures | Template | High | **DONE** (`408339f`) |
+| 4 | Close Issue #7 as completed | charlie80-b | Low | Pending |
+| 5 | Close Issue #2 as duplicate of #4 | charlie80-b | Low | Pending |
+| 6 | Close PR #1 as superseded | charlie80-b | Low | Pending |
+| 7 | Triage Issue #15 (close or rephrase as code task) | charlie80-b | Medium | Pending |
+| 8 | Add `implementation:complete` to skip-event filter | Template | Medium | Not started |
+| 9 | Guard against in-place script modification race | Template | Low | Not started |
+| 10 | Install `bc` or use bash arithmetic in timing code | Template | Low | Not started |
