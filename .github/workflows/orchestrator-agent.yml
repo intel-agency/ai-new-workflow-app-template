@@ -5,9 +5,6 @@ on:
     types: [opened, labeled] #, edited, reopened, assigned]
   #issue_comment:
   #  types: [created, edited]
-  workflow_run:
-    types: [completed]
-    workflows: ["Pre-build dev container image"]
   # pull_request_review_comment:
   #   types: [created, edited]
   # pull_request_review:
@@ -38,9 +35,7 @@ jobs:
       (github.event_name == 'issues' &&
        github.event.action == 'labeled' &&
        github.event.label.name != 'implementation:ready' &&
-       github.event.label.name != 'implementation:complete') ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion != 'success')
+       github.event.label.name != 'implementation:complete')
     steps:
       - name: Report skipped event
         run: |
@@ -64,9 +59,7 @@ jobs:
       (github.event_name != 'issues' ||
        github.event.action != 'labeled' ||
        github.event.label.name == 'implementation:ready' ||
-       github.event.label.name == 'implementation:complete') &&
-      (github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success')
+       github.event.label.name == 'implementation:complete')
     permissions:
       id-token: write
       contents: write
