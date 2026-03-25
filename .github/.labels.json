@@ -126,10 +126,22 @@
         "description": "Agent stalled due to budget/token limits"
     },
     {
+        "name": "implementation:ready",
+        "color": "0052cc",
+        "default": false,
+        "description": "Ready for implementation by downstream orchestration workflows"
+    },
+    {
         "name": "implementation:complete",
         "color": "0e8a16",
         "default": false,
         "description": "Implementation phase is complete"
+    },
+    {
+        "name": "epic:creation-deferred",
+        "color": "fbca04",
+        "default": false,
+        "description": "Epic creation was deferred — re-apply implementation:ready after project-setup completes"
     },
     {
         "name": "epic",
