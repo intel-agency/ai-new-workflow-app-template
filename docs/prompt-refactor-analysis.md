@@ -1,5 +1,9 @@
 # Orchestrator Prompt Refactor — Analysis & Recommendations
 
+> **Status: All fixes implemented** (2026-03-25)
+>
+> Issues A, B, C, D, E, F have been implemented across 3 repos.
+
 ## 1. Design Summary
 
 The refactor replaces the old monolithic 4-step-per-clause approach with a **label-driven finite state machine** where each clause does exactly one workflow step and then applies the next `orchestration:*` label to advance state.
@@ -210,11 +214,50 @@ With the YAML filter fix (Issue A), `implementation:ready` won't match the `orch
 
 ## 5. Files Changed by Recommended Fixes
 
-| File | Repo | Issues Addressed |
-|---|---|---|
-| `.github/workflows/orchestrator-agent.yml` | `ai-new-workflow-app-template` | A, D |
-| `.github/workflows/prompts/orchestrator-agent-prompt.md` | `ai-new-workflow-app-template` | B, D |
-| `.github/.labels.json` | `ai-new-workflow-app-template` | C, D, L |
-| `scripts/trigger-project-setup.ps1` | `workflow-launch2` | D |
-| `ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/project-setup.md` | `agent-instructions` | E |
-| `ai_instruction_modules/ai-workflow-assignments/create-app-plan.md` | `agent-instructions` | F |
+| File | Repo | Issues Addressed | Status |
+|---|---|---|---|
+| `.github/workflows/orchestrator-agent.yml` | `ai-new-workflow-app-template` | A, D | **DONE** |
+| `.github/workflows/prompts/orchestrator-agent-prompt.md` | `ai-new-workflow-app-template` | B, D | **DONE** |
+| `.github/.labels.json` | `ai-new-workflow-app-template` | C, D, L | **DONE** |
+| `scripts/trigger-project-setup.ps1` | `workflow-launch2` | D | **DONE** |
+| `ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/project-setup.md` | `agent-instructions` | E | **DONE** |
+| `ai_instruction_modules/ai-workflow-assignments/create-app-plan.md` | `agent-instructions` | F | **DONE** |
+
+## 6. Implementation Details
+
+### Issue A — YAML filter (DONE)
+
+Replaced hard-coded `implementation:ready`/`implementation:complete` label whitelist in both
+`skip-event` and `orchestrate` job `if:` conditions with `startsWith(github.event.label.name, 'orchestration:')`.
+This is forward-compatible — adding new `orchestration:*` states requires no YAML changes.
+
+### Issue B — Missing command (DONE)
+
+Replaced both `/orchestrate-single-assignment` calls in the `orchestration:epic-reviewed` clause
+with `/orchestrate-dynamic-workflow $workflow_name = single-workflow { $workflow_assignment = ... }`,
+using the existing `single-workflow.md` dynamic workflow.
+
+### Issue C — Labels (DONE)
+
+Added 6 new `orchestration:*` labels to `.labels.json`:
+- `orchestration:dispatch`, `orchestration:plan-approved`, `orchestration:epic-ready`,
+  `orchestration:epic-implemented`, `orchestration:epic-reviewed`, `orchestration:epic-complete`
+
+Removed 3 stale labels: `implementation:ready`, `implementation:complete`, `epic:creation-deferred`.
+
+### Issue D — Remove `opened` trigger (DONE)
+
+1. Changed `types: [opened, labeled]` → `types: [labeled]` in YAML
+2. Changed dispatch clause from `action = opened && title contains` to `action = labeled && labels contains: "orchestration:dispatch"`
+3. Updated `trigger-project-setup.ps1` to pass `-Labels @('orchestration:dispatch')` to `create-dispatch-issue.ps1`
+
+### Issue E — Plan-approved handoff (DONE)
+
+Added `post-script-complete` event to `project-setup.md` that applies `orchestration:plan-approved`
+to the plan issue after all 5 setup assignments complete. Updated acceptance criteria.
+
+### Issue F — Remove `implementation:ready` from `create-app-plan.md` (DONE)
+
+Removed all 3 references (acceptance criterion #18, detailed step, completion section).
+Added note explaining that `orchestration:plan-approved` is applied by `project-setup`'s
+`post-script-complete` event, not by this assignment.

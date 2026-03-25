@@ -2,7 +2,7 @@ name: orchestrator-agent
 
 on:
   issues:
-    types: [opened, labeled] #, edited, reopened, assigned]
+    types: [labeled] #, opened, edited, reopened, assigned]
   #issue_comment:
   #  types: [created, edited]
   # pull_request_review_comment:
@@ -27,15 +27,14 @@ jobs:
     # When this job runs, its step outputs the event details and explains the skip.
     # Skip cases:
     #   1. traycerai[bot] actor — avoid feedback loops
-    #   2. labeled events for non-workflow labels — only implementation:ready
-    #      and implementation:complete should trigger the orchestrator
+    #   2. labeled events where the label does NOT start with 'orchestration:'
+    #      Only orchestration:* labels should trigger the orchestrator.
     runs-on: ubuntu-24.04
     if: >-
       github.actor == 'traycerai[bot]' ||
       (github.event_name == 'issues' &&
        github.event.action == 'labeled' &&
-       github.event.label.name != 'implementation:ready' &&
-       github.event.label.name != 'implementation:complete')
+       !startsWith(github.event.label.name, 'orchestration:'))
     steps:
       - name: Report skipped event
         run: |
@@ -58,8 +57,7 @@ jobs:
       github.actor != 'traycerai[bot]' &&
       (github.event_name != 'issues' ||
        github.event.action != 'labeled' ||
-       github.event.label.name == 'implementation:ready' ||
-       github.event.label.name == 'implementation:complete')
+       startsWith(github.event.label.name, 'orchestration:'))
     permissions:
       id-token: write
       contents: write

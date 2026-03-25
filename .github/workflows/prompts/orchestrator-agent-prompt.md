@@ -177,24 +177,27 @@ case (type = issues &&
           ## Step 3: Debrief and capture findings
           ## Lightweight: report progress, flag deviations, note plan-impacting discoveries.
 
-          - /orchestrate-single-assignment
-              assignment_name = report-progress { $epic = $implemented_epic }          
+          - /orchestrate-dynamic-workflow
+              $workflow_name = single-workflow { $workflow_assignment = report-progress, $epic = $implemented_epic }
           - Review the report for any ACTION ITEMS (deviations, new findings, plan-impacting issues).
           - if ACTION ITEMS are found:
             - File issues for newly-discovered required work.
             - Update descriptions of upcoming epics/phases if needed.
 
-          - /orchestrate-single-assignment
-              assignment_name = debrief-and-document { $epic = $implemented_epic }         
+          - /orchestrate-dynamic-workflow
+              $workflow_name = single-workflow { $workflow_assignment = debrief-and-document, $epic = $implemented_epic }         
           
           - if both workflows succeed → apply label "orchestration:epic-complete" to the newly-created epic issue.
           - else → print information about the failure, skip to ##Final.
         }
 
 case (type = issues &&
-       action = opened &&
-       title contains: "orchestrate-dynamic-workflow")
+       action = labeled &&
+       labels contains: "orchestration:dispatch")
        {
+          ## Dynamic workflow dispatch — triggered by orchestration:dispatch label.
+          ## The issue title defaults to "orchestrate-dynamic-workflow" and the body
+          ## contains the workflow name and arguments.
           - $dispatch = parse_workflow_dispatch_body(body)
           - if $dispatch is null → comment on the issue with an error explaining the body could not be parsed, then skip to ##Final.
           - /orchestrate-dynamic-workflow

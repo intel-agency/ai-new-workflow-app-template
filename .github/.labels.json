@@ -126,22 +126,40 @@
         "description": "Agent stalled due to budget/token limits"
     },
     {
-        "name": "implementation:ready",
+        "name": "orchestration:dispatch",
+        "color": "bfd4f2",
+        "default": false,
+        "description": "Dispatch issue — triggers orchestrate-dynamic-workflow"
+    },
+    {
+        "name": "orchestration:plan-approved",
         "color": "0052cc",
         "default": false,
-        "description": "Ready for implementation by downstream orchestration workflows"
+        "description": "Plan reviewed and approved — begin epic creation"
     },
     {
-        "name": "implementation:complete",
+        "name": "orchestration:epic-ready",
+        "color": "1d76db",
+        "default": false,
+        "description": "Epic created — ready for implementation"
+    },
+    {
+        "name": "orchestration:epic-implemented",
+        "color": "5319e7",
+        "default": false,
+        "description": "Epic implemented — ready for PR review"
+    },
+    {
+        "name": "orchestration:epic-reviewed",
+        "color": "c5def5",
+        "default": false,
+        "description": "PRs reviewed and merged — ready for debrief"
+    },
+    {
+        "name": "orchestration:epic-complete",
         "color": "0e8a16",
         "default": false,
-        "description": "Implementation phase is complete"
-    },
-    {
-        "name": "epic:creation-deferred",
-        "color": "fbca04",
-        "default": false,
-        "description": "Epic creation was deferred — re-apply implementation:ready after project-setup completes"
+        "description": "Epic fully complete — advance to next"
     },
     {
         "name": "epic",
