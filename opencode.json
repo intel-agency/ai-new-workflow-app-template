@@ -55,31 +55,38 @@
         "gpt-5.4": {
           "name": "GPT-5.4",
           "limit": {
-            "context": 200000,
-            "output": 100000
+            "context": 1050000,
+            "output": 128000
           }
         },
-        "gpt-5-mini": {
-          "name": "GPT-5 Mini",
+        "gpt-5.4-mini": {
+          "name": "GPT-5.4 Mini",
           "limit": {
-            "context": 200000,
-            "output": 100000
+            "context": 400000,
+            "output": 128000
+          }
+        },
+        "gpt-5.4-nano": {
+          "name": "GPT-5.4 Nano",
+          "limit": {
+            "context": 400000,
+            "output": 128000
           }
         },
         "gpt-5.3-codex": {
           "name": "GPT-5.3 Codex",
           "limit": {
-            "context": 200000,
-            "output": 100000
+            "context": 400000,
+            "output": 128000
           }
         },
-        "gpt-5.1-codex-max": {
-          "name": "GPT-5.1 Codex Max",
+        "gpt-5.3-codex-spark": {
+          "name": "GPT-5.3 Codex Spark",
           "limit": {
-            "context": 200000,
-            "output": 100000
+            "context": 128000,
+            "output": 32000
           }
-        }
+        },
       }
     },
     "google": {
