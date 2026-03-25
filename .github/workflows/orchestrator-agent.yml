@@ -38,7 +38,9 @@ jobs:
       (github.event_name == 'issues' &&
        github.event.action == 'labeled' &&
        github.event.label.name != 'implementation:ready' &&
-       github.event.label.name != 'implementation:complete')
+       github.event.label.name != 'implementation:complete') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion != 'success')
     steps:
       - name: Report skipped event
         run: |
