@@ -86,59 +86,109 @@ These are reusable procedures referenced by the clause logic below. When a claus
 
  case (type = issues &&
         action = labeled &&
-        labels contains: "implementation:ready" &&
-        title contains: "Complete Implementation (Application Plan)")
+        labels contains: "orchestration:plan-approved")
         {
+          ## Application Plan approved — begin epic creation loop.
+          ## Label-driven: matches on `orchestration:plan-approved` regardless of title format.
+          ## Human or delegating agent applies this label when the plan is reviewed and ready.
+
           - $next = find_next_unimplemented_line_item()
           - if $next is null → skip to ##Final with message "All line items are already complete."
           - /orchestrate-dynamic-workflow
               $workflow_name = create-epic-v2 { $phase = $next.phase, $line_item = $next.line_item }
-        }
 
- case (type = issues &&
-        action = labeled &&
-        labels contains: "implementation:ready" &&
-        title contains: "Epic")
-        {
-          - $implement_epic = extract_epic_from_title(title)
-          - if $implement_epic is null or empty → comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
-
-          ## Per-Epic 4-Step Orchestration Sequence
-          ## Step 1: Implement the epic (code, tests, open PRs)
-          - /orchestrate-dynamic-workflow
-               $workflow_name = implement-epic { $epic = $implement_epic }
-          - if implement-epic fails → comment on the issue with failure details, skip to ##Final.
-
-          ## Step 2: Review, approve, and merge all PRs for this epic
-          ## This step handles: CI verification & remediation, code review delegation,
-          ## auto-reviewer wait, PR comment resolution, and merge execution.
-          - /orchestrate-dynamic-workflow
-               $workflow_name = review-epic-prs { $epic = $implement_epic }
-          - if review-epic-prs fails → comment on the issue with failure details, skip to ##Final.
-
-          ## Step 3: Debrief and capture findings
-          ## Lightweight: report progress, flag deviations, note plan-impacting discoveries.
-          - Execute the `report-progress` assignment for this epic.
-          - Review the report for any ACTION ITEMS (deviations, new findings, plan-impacting issues).
-          - If ACTION ITEMS are found:
-            - File issues for newly-discovered required work.
-            - Update descriptions of upcoming epics/phases if needed.
-          - Execute the `debrief-and-document` assignment to record learnings.
-
-          ## Step 4: Mark complete and advance
-          - if all steps above completed successfully, add the "implementation:complete" label to the issue to mark it as complete
+          - if create-epic-v2 succeeds → apply label "orchestration:epic-ready" to the newly-created epic issue.
+          - else → print information about the failure, skip to ##Final.
         }
 
 case (type = issues &&
         action = labeled &&
-        labels contains: "implementation:complete" &&
-        title contains: "Epic")
+        labels contains: "orchestration:epic-complete" &&
+        labels contains: "epic")
         {
+          ## Epic completion detected — find next unimplemented line item and create a new epic for it.
+          ## One entire epic implementation sequence completed, start the next sequence
+
           - $completed = extract_epic_from_title(title)
           - $next = find_next_unimplemented_line_item($completed.phase, $completed.line_item)
           - if $next is null → skip to ##Final with message "All line items are already complete."
+
           - /orchestrate-dynamic-workflow
               $workflow_name = create-epic-v2 { $phase = $next.phase, $line_item = $next.line_item }
+          
+          - if create-epic-v2 succeeds → apply label "orchestration:epic-ready" to the newly-created epic issue.
+          - else → print information about the failure, skip to ##Final.           
+        }
+
+ case (type = issues &&
+        action = labeled &&
+        labels contains: "orchestration:epic-ready" &&        
+        labels contains: "epic")
+        {
+          ## Epic implementation triggered — run 4-step orchestration sequence.
+          ## Label-driven: matches on `orchestration:epic-ready` + `epic` label combination.
+          ## Title is still parsed by extract_epic_from_title() for the epic identifier.
+
+          - $created_epic = extract_epic_from_title(title)
+          - if $created_epic is null or empty → comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
+
+          ## Per-Epic 4-Step Orchestration Sequence
+          ## Step 1: Implement the epic (code, tests, open PRs)
+          - /orchestrate-dynamic-workflow
+               $workflow_name = implement-epic { $epic = $created_epic }
+          - if implement-epic succeeds → apply label "orchestration:epic-implemented" to the newly-created epic issue.
+          - else → print information about the failure, skip to ##Final.      
+        }
+
+  case (type = issues &&
+        action = labeled &&
+        labels contains: "orchestration:epic-implemented" &&        
+        labels contains: "epic")
+        {
+          ## Epic implementation triggered — run 4-step orchestration sequence.
+          ## Label-driven: matches on `orchestration:epic-implemented` + `epic` label combination.
+          ## Title is still parsed by extract_epic_from_title() for the epic identifier.
+
+          - $implemented_epic = extract_epic_from_title(title)
+          - if $implemented_epic is null or empty → comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
+
+          ## Per-Epic 4-Step Orchestration Sequence
+          ## Step 2: Review, approve, and merge all PRs for this epic
+          ## This step handles: CI verification & remediation, code review delegation,
+          ## auto-reviewer wait, PR comment resolution, and merge execution.
+          - /orchestrate-dynamic-workflow
+               $workflow_name = review-epic-prs { $epic = $implemented_epic }
+          - if review-epic-prs succeeds → apply label "orchestration:epic-reviewed" to the newly-created epic issue.
+          - else → print information about the failure, skip to ##Final.
+        }
+case (type = issues &&
+        action = labeled &&
+        labels contains: "orchestration:epic-reviewed" &&        
+        labels contains: "epic")
+        {
+          ## Epic implementation triggered — run 4-step orchestration sequence.
+          ## Label-driven: matches on `orchestration:epic-reviewed` + `epic` label combination.
+          ## Title is still parsed by extract_epic_from_title() for the epic identifier.
+
+          - $implemented_epic = extract_epic_from_title(title)
+          - if $implemented_epic is null or empty → comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
+
+          ## Per-Epic 4-Step Orchestration Sequence
+          ## Step 3: Debrief and capture findings
+          ## Lightweight: report progress, flag deviations, note plan-impacting discoveries.
+
+          - /orchestrate-single-assignment
+              assignment_name = report-progress { $epic = $implemented_epic }          
+          - Review the report for any ACTION ITEMS (deviations, new findings, plan-impacting issues).
+          - if ACTION ITEMS are found:
+            - File issues for newly-discovered required work.
+            - Update descriptions of upcoming epics/phases if needed.
+
+          - /orchestrate-single-assignment
+              assignment_name = debrief-and-document { $epic = $implemented_epic }         
+          
+          - if both workflows succeed → apply label "orchestration:epic-complete" to the newly-created epic issue.
+          - else → print information about the failure, skip to ##Final.
         }
 
 case (type = issues &&
@@ -153,16 +203,6 @@ case (type = issues &&
             - if the workflow succeeds, close the issue with a short comment indicating success.
             - if the workflow fails, leave the issue open and comment with details about the failure and potential next steps.
        }
-
-case (type = workflow_run &&
-        workflow.name = "Pre-build dev container image" &&
-        branch = main &&
-        status = completed &&
-        conclusion = success)
-        {
-          - /orchestrate-dynamic-workflow
-              $workflow_name = project-setup
-        }
 
 case (default)
       {
