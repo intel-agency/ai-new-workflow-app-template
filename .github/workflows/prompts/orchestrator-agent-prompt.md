@@ -113,13 +113,19 @@ These are reusable procedures referenced by the clause logic below. When a claus
           ## Label-driven: matches on `orchestration:plan-approved` regardless of title format.
           ## Human or delegating agent applies this label when the plan is reviewed and ready.
 
+          - postStatusUpdate("🤖 Orchestrator matched `orchestration:plan-approved` clause. Scanning plan for next unimplemented line item...")
           - $next = find_next_unimplemented_line_item()
-          - if $next is null → skip to ##Final with message "All line items are already complete."
+          - if $next is null:
+            - postStatusUpdate("✅ All line items are already complete. Nothing to do.")
+            - skip to ##Final.
+          - postStatusUpdate("🤖 Found next line item: Phase " + $next.phase + ", Line Item " + $next.line_item + ". Creating epic via `create-epic-v2`...")
           - /orchestrate-dynamic-workflow
               $workflow_name = create-epic-v2 { $phase = $next.phase, $line_item = $next.line_item }
 
-          - if create-epic-v2 succeeds → apply label "orchestration:epic-ready" to the newly-created epic issue.
-          - else → print information about the failure, skip to ##Final.
+          - if create-epic-v2 succeeds:
+            - postStatusUpdate("✅ Epic created for Phase " + $next.phase + " Line Item " + $next.line_item + ". Applying `orchestration:epic-ready` label.")
+            - apply label "orchestration:epic-ready" to the newly-created epic issue.
+          - else → postStatusUpdate("❌ `create-epic-v2` failed for Phase " + $next.phase + " Line Item " + $next.line_item + ". See workflow run logs."), skip to ##Final.
         }
 
 case (type = issues &&
@@ -130,19 +136,26 @@ case (type = issues &&
           ## Epic completion detected — find next unimplemented line item and create a new epic for it.
           ## One entire epic implementation sequence completed, start the next sequence
 
+          - postStatusUpdate("🤖 Orchestrator matched `orchestration:epic-complete` + `epic` clause. Parsing completed epic and scanning for next line item...")
           - $completed = extract_epic_from_title(title)
+          - if $completed is null or empty:
+            - postStatusUpdate("❌ Could not parse epic identifier from title. Cannot determine next line item.")
+            - comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
           - $next = find_next_unimplemented_line_item($completed.phase, $completed.line_item)
           - if $next is null:
+            - postStatusUpdate("🏁 All line items are complete! The implementation plan is fully implemented. Closing this epic.")
             - close the current epic issue with a comment "All line items are complete. The implementation plan is fully implemented."
             - skip to ##Final.
 
+          - postStatusUpdate("🤖 Next line item found: Phase " + $next.phase + ", Line Item " + $next.line_item + ". Creating next epic via `create-epic-v2`...")
           - /orchestrate-dynamic-workflow
               $workflow_name = create-epic-v2 { $phase = $next.phase, $line_item = $next.line_item }
           
           - if create-epic-v2 succeeds:
+            - postStatusUpdate("✅ Next epic created for Phase " + $next.phase + " Line Item " + $next.line_item + ". Applying `orchestration:epic-ready` and closing this epic.")
             - apply label "orchestration:epic-ready" to the newly-created epic issue.
             - close the current epic issue with a short comment indicating it is complete and referencing the newly-created epic issue.
-          - else → print information about the failure, skip to ##Final.           
+          - else → postStatusUpdate("❌ `create-epic-v2` failed for Phase " + $next.phase + " Line Item " + $next.line_item + ". See workflow run logs."), skip to ##Final.           
         }
 
  case (type = issues &&
@@ -154,15 +167,21 @@ case (type = issues &&
           ## Label-driven: matches on `orchestration:epic-ready` + `epic` label combination.
           ## Title is still parsed by extract_epic_from_title() for the epic identifier.
 
+          - postStatusUpdate("🤖 Orchestrator matched `orchestration:epic-ready` + `epic` clause. Parsing epic from title...")
           - $created_epic = extract_epic_from_title(title)
-          - if $created_epic is null or empty → comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
+          - if $created_epic is null or empty:
+            - postStatusUpdate("❌ Could not parse epic identifier from issue title. Cannot proceed with implementation.")
+            - comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
 
           ## Per-Epic 4-Step Orchestration Sequence
           ## Step 1: Implement the epic (code, tests, open PRs)
+          - postStatusUpdate("🤖 Step 1/4: Starting `implement-epic` for epic: " + $created_epic)
           - /orchestrate-dynamic-workflow
                $workflow_name = implement-epic { $epic = $created_epic }
-          - if implement-epic succeeds → apply label "orchestration:epic-implemented" to the newly-created epic issue.
-          - else → print information about the failure, skip to ##Final.      
+          - if implement-epic succeeds:
+            - postStatusUpdate("✅ Step 1/4: `implement-epic` completed for: " + $created_epic + ". Applying `orchestration:epic-implemented` label.")
+            - apply label "orchestration:epic-implemented" to the newly-created epic issue.
+          - else → postStatusUpdate("❌ Step 1/4 `implement-epic` failed for: " + $created_epic + ". See workflow run logs."), skip to ##Final.      
         }
 
   case (type = issues &&
@@ -174,17 +193,23 @@ case (type = issues &&
           ## Label-driven: matches on `orchestration:epic-implemented` + `epic` label combination.
           ## Title is still parsed by extract_epic_from_title() for the epic identifier.
 
+          - postStatusUpdate("🤖 Orchestrator matched `orchestration:epic-implemented` + `epic` clause. Parsing epic from title...")
           - $implemented_epic = extract_epic_from_title(title)
-          - if $implemented_epic is null or empty → comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
+          - if $implemented_epic is null or empty:
+            - postStatusUpdate("❌ Could not parse epic identifier from issue title. Cannot proceed with PR review.")
+            - comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
 
           ## Per-Epic 4-Step Orchestration Sequence
           ## Step 2: Review, approve, and merge all PRs for this epic
           ## This step handles: CI verification & remediation, code review delegation,
           ## auto-reviewer wait, PR comment resolution, and merge execution.
+          - postStatusUpdate("🤖 Step 2/4: Starting `review-epic-prs` for epic: " + $implemented_epic)
           - /orchestrate-dynamic-workflow
                $workflow_name = review-epic-prs { $epic = $implemented_epic }
-          - if review-epic-prs succeeds → apply label "orchestration:epic-reviewed" to the newly-created epic issue.
-          - else → print information about the failure, skip to ##Final.
+          - if review-epic-prs succeeds:
+            - postStatusUpdate("✅ Step 2/4: `review-epic-prs` completed for: " + $implemented_epic + ". Applying `orchestration:epic-reviewed` label.")
+            - apply label "orchestration:epic-reviewed" to the newly-created epic issue.
+          - else → postStatusUpdate("❌ Step 2/4 `review-epic-prs` failed for: " + $implemented_epic + ". See workflow run logs."), skip to ##Final.
         }
 case (type = issues &&
         action = labeled &&
@@ -195,25 +220,38 @@ case (type = issues &&
           ## Label-driven: matches on `orchestration:epic-reviewed` + `epic` label combination.
           ## Title is still parsed by extract_epic_from_title() for the epic identifier.
 
+          - postStatusUpdate("🤖 Orchestrator matched `orchestration:epic-reviewed` + `epic` clause. Parsing epic from title...")
           - $implemented_epic = extract_epic_from_title(title)
-          - if $implemented_epic is null or empty → comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
+          - if $implemented_epic is null or empty:
+            - postStatusUpdate("❌ Could not parse epic identifier from issue title. Cannot proceed with debrief.")
+            - comment on the issue with an error explaining the title could not be parsed, then skip to ##Final.
 
           ## Per-Epic 4-Step Orchestration Sequence
           ## Step 3: Debrief and capture findings
           ## Lightweight: report progress, flag deviations, note plan-impacting discoveries.
 
+          - postStatusUpdate("🤖 Step 3/4: Starting `report-progress` for epic: " + $implemented_epic)
           - /orchestrate-dynamic-workflow
               $workflow_name = single-workflow { $workflow_assignment = report-progress, $epic = $implemented_epic }
+          - if report-progress fails:
+            - postStatusUpdate("❌ Step 3/4 `report-progress` failed for: " + $implemented_epic + ". See workflow run logs.")
+            - skip to ##Final.
+          - postStatusUpdate("✅ Step 3/4: `report-progress` completed for: " + $implemented_epic + ". Reviewing for action items...")
           - Review the report for any ACTION ITEMS (deviations, new findings, plan-impacting issues).
           - if ACTION ITEMS are found:
+            - postStatusUpdate("⚠️ Action items found in progress report. Filing issues for newly-discovered work.")
             - File issues for newly-discovered required work.
             - Update descriptions of upcoming epics/phases if needed.
 
+          - postStatusUpdate("🤖 Step 4/4: Starting `debrief-and-document` for epic: " + $implemented_epic)
           - /orchestrate-dynamic-workflow
               $workflow_name = single-workflow { $workflow_assignment = debrief-and-document, $epic = $implemented_epic }         
+          - if debrief-and-document fails:
+            - postStatusUpdate("❌ Step 4/4 `debrief-and-document` failed for: " + $implemented_epic + ". See workflow run logs.")
+            - skip to ##Final.
           
-          - if both workflows succeed → apply label "orchestration:epic-complete" to the newly-created epic issue.
-          - else → print information about the failure, skip to ##Final.
+          - postStatusUpdate("✅ Steps 3-4 complete for: " + $implemented_epic + ". Applying `orchestration:epic-complete` label.")
+          - apply label "orchestration:epic-complete" to the newly-created epic issue.
         }
 
 case (type = issues &&
@@ -239,6 +277,7 @@ case (type = issues &&
 
 case (default)
       {
+        - postStatusUpdate("⚠️ Orchestrator: no clause matched for this event. Fell through to `(default)`. Event details printed to workflow log.")
         - print the contents of your EVENT_DATA with a message stating no match was found so execution fell through to the
         `(default)` clause case.
       }
