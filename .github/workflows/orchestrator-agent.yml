@@ -62,6 +62,7 @@ jobs:
       github.actor != 'traycerai[bot]' &&
       (github.event_name != 'issues' ||
        github.event.action != 'labeled' ||
+       github.event.label.name == 'orchestration:plan-approved' ||
        github.event.label.name == 'implementation:ready' ||
        github.event.label.name == 'implementation:complete') &&
       (github.event_name != 'workflow_run' ||
