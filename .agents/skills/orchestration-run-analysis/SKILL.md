@@ -159,11 +159,15 @@ If the orchestrator produced a debrief document (e.g. in `docs/debrief-and-docum
 https://raw.githubusercontent.com/{owner}/{repo}/{branch}/docs/debrief-and-document/{report}.md
 ```
 
+> **`{branch}`**: Use the repository's default branch (typically `main`) unless the run being analyzed was on a specific branch. Retrieve the default branch from `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
+
 Cross-reference the debrief's self-assessment against the actual evidence gathered.
 
 ### 7. Produce the Report
 
 Create a markdown report at `docs/{repo-short-name}-run-report.md` with the following sections:
+
+> **`{repo-short-name}`**: Derive from the repository name. For template-generated repos (e.g., `project-slug-charlie80`), use the generated suffix (e.g., `charlie80`). Append a run letter suffix when analyzing multiple runs (e.g., `charlie80-b`). For repos without a generated suffix, use a short slug derived from the repo name.
 
 ```markdown
 # Workflow Run Report: `{repo}`

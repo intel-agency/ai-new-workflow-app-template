@@ -112,10 +112,10 @@ The orchestrator prompt's clause cases expect specific title patterns:
 
 | Clause | Required Title Pattern | Issue #2 Title | Match? |
 |--------|----------------------|----------------|--------|
-| Clause 1 | `"Complete Implementation (Application Plan)"` | `[Application Plan] workflow-orchestration-queue Implementation` | ❌ NO |
-| Clause 2 | `"Epic"` | `[Application Plan] workflow-orchestration-queue Implementation` | ❌ NO |
-| Clause 3 | `"Epic"` (with `implementation:complete`) | N/A | ❌ NO |
-| Clause 4 | `"orchestrate-dynamic-workflow"` (on `opened`) | `[Application Plan] workflow-orchestration-queue Implementation` | ❌ NO |
+| Clause 1 | `Complete Implementation (Application Plan)` | `[Application Plan] workflow-orchestration-queue Implementation` | ❌ NO |
+| Clause 2 | `Epic` | `[Application Plan] workflow-orchestration-queue Implementation` | ❌ NO |
+| Clause 3 | `Epic` (with `implementation:complete`) | N/A | ❌ NO |
+| Clause 4 | `orchestrate-dynamic-workflow` (on `opened`) | `[Application Plan] workflow-orchestration-queue Implementation` | ❌ NO |
 | Clause 5 | `workflow_run` type | N/A (type=issues) | ❌ NO |
 | **(default)** | — | — | **✅ MATCHED** |
 
