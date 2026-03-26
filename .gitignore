@@ -425,3 +425,6 @@ docker/validation/results.jsonl
 docker/.env
 models.json
 test-results-pester.xml
+
+# MCP memory knowledge graph (cached via GH Actions, not committed)
+.memory/
