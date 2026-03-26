@@ -25,6 +25,8 @@ Both at once:
     runCmd: make ci-build
 ```
 
+- Also see e.g. [.github/workflows/.disabled/agent-runner.yml](../.github/workflows/.disabled/agent-runner.yml) which also demonstrates this approach.
+
 2. The achieves the full containment/isolation requirements, allowing the agent to be run as separate extra-workflow run service (self-hosted linux service), as well as run like the more normal intra-orchestration-agent.yml workflow run that we have now. This also allows for more flexible invocation of the orchestration process, as it can be triggered by different events or manually from within the devcontainer, without being tightly coupled to the GitHub Actions workflow execution environment.
 
 3. Issues to watch out for:
