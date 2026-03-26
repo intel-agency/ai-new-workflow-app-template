@@ -159,7 +159,7 @@ If the orchestrator produced a debrief document (e.g. in `docs/debrief-and-docum
 https://raw.githubusercontent.com/{owner}/{repo}/{branch}/docs/debrief-and-document/{report}.md
 ```
 
-> **`{branch}`**: This is a place-hol;der for the remote branch currently being used. You can fetch the current value being used by looking in <./AGENTS.md> in the <instruction_source>.<repository>.<branch> field.
+> **`{branch}`**: This is a placeholder for the remote branch currently being used. You can fetch the current value being used by looking in <./AGENTS.md> in the <instruction_source>.<repository>.<branch> field.
 
 Cross-reference the debrief's self-assessment against the actual evidence gathered.
 
@@ -167,7 +167,7 @@ Cross-reference the debrief's self-assessment against the actual evidence gather
 
 Create a markdown report at `docs/{repo-name}-run-report.md` with the following sections:
 
-> **`{repo-name}`**: Repo name without the server or owner/namesopace, e.g. `workflow-orchestration-queue-zulu78-b`, `workflow-orchestration-queue=charlie80`, etc.
+> **`{repo-name}`**: Repo name without the server or owner/namespace, e.g. `workflow-orchestration-queue-zulu78-b`, `workflow-orchestration-queue-charlie80`, etc.
 
 ```markdown
 # Workflow Run Report: `{repo}`
