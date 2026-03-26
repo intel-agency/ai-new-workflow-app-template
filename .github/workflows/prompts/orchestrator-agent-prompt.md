@@ -41,6 +41,19 @@ If the issue or comment or other entity that triggered this workflow contains th
 
 These are reusable procedures referenced by the clause logic below. When a clause calls one of these functions, execute the steps described here and return the result.
 
+### postStatusUpdate(message)
+
+> Posts a status update comment on the triggering issue.
+>
+> **Input:** `message` — the status message string to post.
+>
+> **Steps:**
+> 1. Extract the issue number from the EVENT_DATA (e.g. `event.issue.number`).
+> 2. Post a new comment on that issue in the current repository using `gh issue comment {issue_number} --body "{message}"` or the equivalent GitHub API call.
+> 3. Do not edit or replace any existing comments — always create a new comment.
+>
+> **Returns:** nothing.
+
 ### find_next_unimplemented_line_item(completed_phase?, completed_line_item?)
 
 > Determines the next phase and line_item to create an Epic for.
@@ -202,17 +215,17 @@ case (type = issues &&
           ## Dynamic workflow dispatch — triggered by orchestration:dispatch label.
           ## The issue title defaults to "orchestrate-dynamic-workflow" and the body
           ## contains the workflow name and arguments.
-          - comment on the issue: "🤖 Orchestrator triggered — matched `orchestration:dispatch` clause. Parsing dispatch body..."
+          - postStatusUpdate("🤖 Orchestrator triggered — matched `orchestration:dispatch` clause. Parsing dispatch body...")
           - $dispatch = parse_workflow_dispatch_body(body)
           - if $dispatch is null → comment on the issue with an error explaining the body could not be parsed, then skip to ##Final.
-          - comment on the issue: "🤖 Orchestrator triggered — invoking `{$dispatch.workflow_name}` dynamic workflow..."
+          - postStatusUpdate("🤖 Orchestrator triggered — invoking `{$dispatch.workflow_name}` dynamic workflow...")
           - /orchestrate-dynamic-workflow
               $workflow_name = $dispatch.workflow_name { ...$dispatch.args }
           - if the workflow succeeds:
-            - comment on the issue: "✅ `{$dispatch.workflow_name}` completed successfully."
-            - close the issue with a comment: "🏁 Dispatch complete — `{$dispatch.workflow_name}` finished with no errors."
+            - postStatusUpdate("✅ `{$dispatch.workflow_name}` completed successfully.")
+            - close the issue with a final postStatusUpdate("🏁 Dispatch complete — `{$dispatch.workflow_name}` finished with no errors.") then close it.
           - if the workflow fails:
-            - comment on the issue: "❌ `{$dispatch.workflow_name}` failed. See details below:\n{summary of failure reason and any potential next steps}"
+            - postStatusUpdate("❌ `{$dispatch.workflow_name}` failed. See details below:\n{summary of failure reason and any potential next steps}")
             - leave the issue open.
        }
 
