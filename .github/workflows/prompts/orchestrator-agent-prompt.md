@@ -1,6 +1,14 @@
 # Orchestrator Agent Prompt
 
+## MANDATORY STARTUP PROTOCOL — DO THIS FIRST
 
+Before ANY other action, you MUST complete these steps in order:
+
+1. **Load Memory**: Call `read_graph` to retrieve existing project context, prior decisions, and patterns.
+2. **Think Sequentially**: Call `sequential_thinking` to analyze the incoming event, identify what type of request it is, plan your approach, and determine which clause will match.
+3. **Then proceed** to the Instructions section below.
+
+Skipping these steps is a protocol violation. See AGENTS.md `mandatory_tool_protocols` for full requirements.
 
 ## Instructions
 
@@ -237,6 +245,9 @@ case (default)
 
 ## Final
 
+  - **MANDATORY COMPLETION**: Before finishing, persist task outcomes to the knowledge graph:
+    - Call `create_entities` or `add_observations` to store: what was done, what succeeded/failed, decisions made, and any patterns or lessons learned.
+    - This ensures context is available for future orchestration runs.
   - Say goodbye! and finish execution.
 
 ## EVENT_DATA

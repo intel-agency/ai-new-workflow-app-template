@@ -148,8 +148,108 @@ scope: repository
     <rule>Repository labels are defined in `.github/.labels.json`. Use `scripts/import-labels.ps1` to sync them to a repo instance. When adding new labels, add them to this file — it is the single source of truth for the label set.</rule>
   </coding_conventions>
 
+  <!-- ═══════════════════════════════════════════════════════════════════
+       MANDATORY TOOL PROTOCOLS — ALL AGENTS MUST FOLLOW
+       These are NON-NEGOTIABLE requirements for every agent in this system.
+       Failure to follow these protocols is a critical defect.
+       ═══════════════════════════════════════════════════════════════════ -->
+  <mandatory_tool_protocols>
+    <overview>
+      ALL agents — orchestrator, specialists, and subagents — MUST use the following
+      MCP tools as part of their standard operating procedure. These are not optional
+      suggestions; they are mandatory requirements that apply to every non-trivial task.
+      Agents that skip these protocols are operating incorrectly.
+    </overview>
+
+    <protocol id="sequential_thinking" enforcement="MANDATORY">
+      <title>Sequential Thinking Tool — ALWAYS USE</title>
+      <tool>sequential_thinking</tool>
+      <when>
+        EVERY non-trivial task. This means any task that involves more than a single
+        obvious action. If in doubt, use it.
+      </when>
+      <required_usage_points>
+        <point>At task START: Use sequential thinking to analyze the request, break it into steps, identify risks, and plan the approach BEFORE taking any action.</point>
+        <point>At DECISION POINTS: Use sequential thinking when choosing between alternatives, evaluating trade-offs, or making architectural decisions.</point>
+        <point>When DEBUGGING: Use sequential thinking to systematically isolate root causes.</point>
+        <point>Before DELEGATION: The Orchestrator MUST use sequential thinking to plan the delegation tree, determine agent assignments, and define success criteria.</point>
+      </required_usage_points>
+      <violation>Skipping sequential thinking on a non-trivial task is a protocol violation. If an agent completes a complex task without invoking sequential_thinking, the work should be reviewed for quality issues.</violation>
+    </protocol>
+
+    <protocol id="knowledge_graph_memory" enforcement="MANDATORY">
+      <title>Knowledge Graph Memory — ALWAYS USE</title>
+      <tools>
+        <tool>create_entities</tool>
+        <tool>create_relations</tool>
+        <tool>add_observations</tool>
+        <tool>delete_entities</tool>
+        <tool>delete_observations</tool>
+        <tool>delete_relations</tool>
+        <tool>read_graph</tool>
+        <tool>search_nodes</tool>
+        <tool>open_nodes</tool>
+      </tools>
+      <required_usage_points>
+        <point>At task START: Call `read_graph` or `search_nodes` to retrieve existing context about the project, user preferences, prior decisions, and known patterns BEFORE planning or acting.</point>
+        <point>After SIGNIFICANT WORK: Call `create_entities`, `add_observations`, or `create_relations` to persist important findings, decisions, patterns discovered, and context for future tasks.</point>
+        <point>After COMPLETING a task: Store the outcome, any lessons learned, and follow-up items in the knowledge graph.</point>
+        <point>When STARTING a new workflow or assignment: Search for prior related work, decisions, and context.</point>
+      </required_usage_points>
+      <what_to_store>
+        <item>Project-specific patterns and conventions discovered during work</item>
+        <item>User preferences and decisions that affect future tasks</item>
+        <item>Architectural decisions and their rationale</item>
+        <item>Error patterns and their resolutions</item>
+        <item>Cross-task context that would otherwise be lost between sessions</item>
+        <item>Workflow state and progress checkpoints</item>
+      </what_to_store>
+      <violation>Failing to read existing memory at task start or failing to persist important findings after task completion is a protocol violation.</violation>
+    </protocol>
+
+    <protocol id="change_validation" enforcement="MANDATORY">
+      <title>Change Validation Protocol — ALWAYS FOLLOW</title>
+      <when>
+        After ANY non-trivial change to code, configuration, workflows, or infrastructure.
+        This includes: logic changes, behavior changes, refactors, dependency updates,
+        config changes, multi-file edits, workflow modifications.
+      </when>
+      <required_steps>
+        <step order="1">Run the full validation suite: `pwsh -NoProfile -File ./scripts/validate.ps1 -All`</step>
+        <step order="2">Fix ALL failures — do not skip, suppress, or ignore errors.</step>
+        <step order="3">Re-run validation until ALL checks pass clean.</step>
+        <step order="4">Only THEN proceed to commit and push.</step>
+      </required_steps>
+      <validation_commands>
+        <command purpose="all checks">./scripts/validate.ps1 -All</command>
+        <command purpose="lint only">./scripts/validate.ps1 -Lint</command>
+        <command purpose="scan only">./scripts/validate.ps1 -Scan</command>
+        <command purpose="test only">./scripts/validate.ps1 -Test</command>
+        <command purpose="devcontainer">bash test/test-devcontainer-tools.sh</command>
+      </validation_commands>
+      <post_push>
+        After push, monitor CI: `gh run list --limit 5`, `gh run watch &lt;id&gt;`, `gh run view &lt;id&gt; --log-failed`.
+        If CI fails, STOP feature work, triage, fix, re-verify, push. Do NOT mark work complete while CI is red.
+      </post_push>
+      <violation>Committing or pushing code without running validation is a protocol violation. Marking a task complete while CI is failing is a protocol violation.</violation>
+    </protocol>
+
+    <agent_checklist>
+      <!-- Agents: verify you have completed these items on every non-trivial task -->
+      <item>☐ Called sequential_thinking at task start to plan approach</item>
+      <item>☐ Called read_graph / search_nodes to retrieve prior context</item>
+      <item>☐ Used sequential_thinking at key decision points during work</item>
+      <item>☐ Ran validation (./scripts/validate.ps1 -All) before commit/push</item>
+      <item>☐ Fixed all validation failures and re-verified clean</item>
+      <item>☐ Persisted important findings to knowledge graph memory</item>
+      <item>☐ Monitored CI after push and confirmed green</item>
+    </agent_checklist>
+  </mandatory_tool_protocols>
+
   <agent_specific_guardrails>
     <rule>The Orchestrator agent delegates to specialists via the `task` tool — never writes code directly.</rule>
+    <rule>The Orchestrator MUST invoke `sequential_thinking` before planning any delegation and `read_graph` before every new task to load prior project context.</rule>
+    <rule>ALL agents MUST follow the mandatory_tool_protocols defined above — sequential thinking, memory, and change validation are not optional.</rule>
     <rule>Prompt assembly pipeline:
       1. Read template from `.github/workflows/prompts/orchestrator-agent-prompt.md`.
       2. Prepend structured event context (event name, action, actor, repo, ref, SHA).
@@ -160,8 +260,10 @@ scope: repository
 
   <agent_readiness>
     <verification_protocol>
-      For any non-trivial change (logic, behavior, refactors, dependency updates, config changes, multi-file edits):
-      run verification, fix all failures, re-run until clean. Do not skip or suppress errors.
+      MANDATORY: For any non-trivial change (logic, behavior, refactors, dependency updates, config changes, multi-file edits):
+      run `./scripts/validate.ps1 -All`, fix all failures, re-run until clean. Do not skip or suppress errors.
+      Do NOT commit or push until validation passes. Do NOT mark tasks complete while CI is red.
+      See `mandatory_tool_protocols.change_validation` above for the full protocol.
     </verification_protocol>
 
     <verification_commands>
@@ -219,22 +321,27 @@ scope: repository
         Prioritize retrieved info over training data for newer features.
       </guidance>
     </instruction>
-    <instruction id="sequential_thinking_default_usage">
+    <instruction id="sequential_thinking_default_usage" enforcement="MANDATORY">
       <applyTo>*</applyTo>
-      <title>Sequential Thinking</title>
+      <title>Sequential Thinking — MANDATORY for all non-trivial tasks</title>
       <tools><tool>sequential_thinking</tool></tools>
       <guidance>
-        Use for all non-trivial requests. Enables step-by-step analysis with revision, branching, and dynamic adjustment.
-        Use when: breaking down complex problems, planning, architectural decisions, debugging, multi-step context.
+        **MUST USE** for all non-trivial requests. This is a mandatory protocol, not a suggestion.
+        See `mandatory_tool_protocols.sequential_thinking` for full requirements.
+        Invoke at: task start (planning), decision points, debugging, and before delegation.
+        Skipping this tool on complex tasks is a protocol violation.
       </guidance>
     </instruction>
-    <instruction id="memory_default_usage">
+    <instruction id="memory_default_usage" enforcement="MANDATORY">
       <applyTo>*</applyTo>
-      <title>Knowledge Graph Memory</title>
+      <title>Knowledge Graph Memory — MANDATORY for all non-trivial tasks</title>
       <tools><tool>create_entities</tool><tool>create_relations</tool><tool>add_observations</tool><tool>delete_entities</tool><tool>delete_observations</tool><tool>delete_relations</tool><tool>read_graph</tool><tool>search_nodes</tool><tool>open_nodes</tool></tools>
       <guidance>
-        Use for non-trivial requests. Persist user/project context (preferences, configs, decisions, challenges, solutions).
-        Entities have names, types, and observations. Relations connect entities. Search/read at task start; update after significant work.
+        **MUST USE** for all non-trivial requests. This is a mandatory protocol, not a suggestion.
+        See `mandatory_tool_protocols.knowledge_graph_memory` for full requirements.
+        Invoke at: task start (read_graph/search_nodes), after significant work (create_entities/add_observations),
+        and after task completion (persist outcomes and lessons learned).
+        Skipping memory operations is a protocol violation.
       </guidance>
     </instruction>
   </tool_use_instructions>

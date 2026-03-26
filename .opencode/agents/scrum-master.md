@@ -44,3 +44,23 @@ Run high-performing agile ceremonies, eliminate impediments, and maintain team h
 ## Important Notes
 - Focus on facilitation, not implementation
 - Remove blockers and maintain team health
+
+## Mandatory Tool Protocols — NON-NEGOTIABLE
+
+These protocols apply to EVERY non-trivial task. See AGENTS.md `mandatory_tool_protocols` for full details.
+
+### Required at Task Start
+1. Call `read_graph` or `search_nodes` to load prior project context from memory
+2. Call `sequential_thinking` to analyze the task, plan approach, and identify risks
+
+### Required During Work
+- Use `sequential_thinking` at key decision points and when debugging
+- Persist important findings via `create_entities` / `add_observations`
+
+### Required Before Commit/Push
+- Run `./scripts/validate.ps1 -All` and fix ALL failures before committing
+- Do NOT push until validation passes clean
+
+### Required After Task Completion
+- Store outcomes and lessons learned in the knowledge graph
+- Confirm CI is green after push

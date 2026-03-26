@@ -83,23 +83,27 @@ Format: `uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.
 3. **Terminal GitHub CLI** (`gh` commands) - Last resort only
 4. **Manual GitHub Web Interface** - **PROHIBITED**
 
-### Sequential Thinking, Memory, and Gemini Tools (MANDATORY)
+### Sequential Thinking, Memory, and Gemini Tools (MANDATORY — NON-NEGOTIABLE)
 
-**Use these MCP tools for ALL complex tasks:**
+**ALL agents MUST use these MCP tools. This is a mandatory protocol defined in AGENTS.md `mandatory_tool_protocols`. Skipping these is a protocol violation.**
 
-1. **Sequential Thinking Tool** (`mcp_sequential_thinking_*`) - **ALWAYS USE** for:
+1. **Sequential Thinking Tool** (`sequential_thinking`) - **MUST USE on every non-trivial task** for:
+   - **At task START**: Analyze the request, plan approach, identify risks BEFORE acting
+   - **At decision points**: Evaluate trade-offs and alternatives
+   - **Before delegation**: Plan delegation tree and success criteria
    - Breaking down complex problems into steps
    - Planning multi-stage implementations
    - Analyzing dependencies and relationships
-   - Creating systematic approaches to tasks
    - Debugging and troubleshooting workflows
 
-2. **Memory Tool** (`mcp_memory_*`) - **ALWAYS USE** for:
+2. **Memory Tool** (`read_graph`, `search_nodes`, `create_entities`, `add_observations`) - **MUST USE on every non-trivial task** for:
+   - **At task START**: Call `read_graph`/`search_nodes` to load prior context BEFORE planning
+   - **After significant work**: Persist findings, decisions, patterns via `create_entities`/`add_observations`
+   - **At task END**: Store outcomes and lessons learned
    - Storing important context between tasks
    - Tracking project-specific patterns and conventions
    - Remembering user preferences and decisions
    - Maintaining state across workflow stages
-   - Caching frequently referenced information
 
 3. **Gemini Tool** (`mcp_gemini_*`) - **USE FOR CONTEXT CONSERVATION**:
    - Reading and analyzing large codebases (1M token context)
