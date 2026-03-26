@@ -27,14 +27,16 @@ jobs:
     # When this job runs, its step outputs the event details and explains the skip.
     # Skip cases:
     #   1. traycerai[bot] actor — avoid feedback loops
-    #   2. labeled events where the label does NOT start with 'orchestration:'
-    #      Only orchestration:* labels should trigger the orchestrator.
+    #   2. labeled events for non-workflow labels — only orchestration:* labels
+    #      and implementation:ready / implementation:complete should trigger the orchestrator
     runs-on: ubuntu-24.04
     if: >-
       github.actor == 'traycerai[bot]' ||
       (github.event_name == 'issues' &&
        github.event.action == 'labeled' &&
-       !startsWith(github.event.label.name, 'orchestration:'))
+       !startsWith(github.event.label.name, 'orchestration:') &&
+       github.event.label.name != 'implementation:ready' &&
+       github.event.label.name != 'implementation:complete')
     steps:
       - name: Report skipped event
         run: |
@@ -57,7 +59,9 @@ jobs:
       github.actor != 'traycerai[bot]' &&
       (github.event_name != 'issues' ||
        github.event.action != 'labeled' ||
-       startsWith(github.event.label.name, 'orchestration:'))
+       startsWith(github.event.label.name, 'orchestration:') ||
+       github.event.label.name == 'implementation:ready' ||
+       github.event.label.name == 'implementation:complete')
     permissions:
       id-token: write
       contents: write
