@@ -4,9 +4,32 @@ To plan and implment...
 
 ## **F1:** Move all server/opencode/orchestraton-related/non-template clone-related code to the `intel-agency/workflow-orchestration-prebuild` container
 
-The the child tremplates can just reference and use the prebuild package without worrying about the server related code. This will also make the codebase cleaner and more modular, separating the disparate converns cleanly and totally. All the funciotrnality and file3s wil be moved into the lowedt layre, the Docker container so that higher layers have access, i.e. the devonctainer layer on top. Then functionality that used to use all the code in the existing template repo can just exec into the devcontainer and use the prebuild container to run the orchestration process, without needing to worry about the underlying code or dependencies. This will also make it easier to maintain and update the orchestration code, as it will be centralized in one place rather than being scattered across multiple templates.
+The child tremplates can just reference and use the prebuild package without worrying about the server related code. This will also make the codebase cleaner and more modular, separating the disparate converns cleanly and totally. All the funciotrnality and file3s wil be moved into the lowedt layre, the Docker container so that higher layers have access, i.e. the devonctainer layer on top. Then functionality that used to use all the code in the existing template repo can just exec into the devcontainer and use the prebuild container to run the orchestration process, without needing to worry about the underlying code or dependencies. This will also make it easier to maintain and update the orchestration code, as it will be centralized in one place rather than being scattered across multiple templates.
 
 **See also:** [F1-orchestration-migration-options.md](F1-orchestration-migration-options.md) — Options analysis for moving agent files, AGENTS.md, prompt, and orchestration config into the prebuild repo (Options A/B/C, AGENTS.md split strategy, recommendation).
+
+**REMARKS:** All logic related to the orchestration process, including the opencode server, orchestrator agent, prompt assembly, and related workflows should be moved to the prebuild container. The template repo should only contain application-level code and configuration that references the prebuild container for orchestration functionality. This is because the opencode server orchestration agent/logic will run in its opwn service which run sindependetly and can be invoked e.g. by GH app event-triggered webhooks
+
+1. The issues raised below about how to run the orchestration inside the template clone repose can be resolved by entering and running the orchestration-agent.yml workflow inside of the devcontainer. Once inside the running devcontainer, all the calls can be made similar to before.
+- See e.g. the "Both at once" section of the Quick Start section of the devcontainer repo README <https://github.com/devcontainers/ci#quick-start>, this uses the `runCmd` input of the `devcontainers/ci@v0.3`:
+
+Both at once:
+
+```
+- name: Pre-build image and run make ci-build in dev container
+  uses: devcontainers/ci@v0.3
+  with:
+    imageName: ghcr.io/example/example-devcontainer
+    cacheFrom: ghcr.io/example/example-devcontainer
+    push: always
+    runCmd: make ci-build
+```
+
+2. The achieves the full containment/isolation requirements, allowing the agent to be run as separate extra-workflow run service (self-hosted linux service), as well as run like the more normal intra-orchestration-agent.yml workflow run that we have now. This also allows for more flexible invocation of the orchestration process, as it can be triggered by different events or manually from within the devcontainer, without being tightly coupled to the GitHub Actions workflow execution environment.
+
+3. Issues to watch out for:
+  - trace output stdout: Ned o make sure all opencode process output and logging makes it up to the workflw run's console.
+
 
 ### Development Analysis
 
@@ -76,6 +99,8 @@ Can work them in prioirty order, if > 1 openiussue w/ a target label, then we ca
 #### Architecture
 
 A new match clause in `orchestrator-agent-prompt.md` would handle a new label (e.g., `orchestration:resolve-open-issues`) or a dispatch body keyword. When matched, the orchestrator queries open issues with target labels, sorts by priority/date, and orchestrates each one sequentially.
+
+**REMARKS**: Let's have it pick the highest priority single issue (or *n* issues) and have it resolve that one, then post another dispatch message or label, i.e. `open-issue-resolved`, so then in another match case we can have logic about what to do after one issue is resolved, i.e. pick the next one to work on, or if no more issues remain, post a summary comment and end. This implies a loop. Arguments/parameter object to the dispatch issue can specify *int count*, *bool continueLoop*, or enum postResolutionAction { Stop, Continue, }.
 
 #### Design Options
 
