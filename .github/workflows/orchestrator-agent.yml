@@ -212,20 +212,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_ORCHESTRATION_AGENT_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          LABEL="${{ github.event.label.name }}"
-          gh issue comment "$ISSUE_NUMBER" \
-            --repo "${{ github.repository }}" \
-            --body "$(cat <<EOF
-          **Orchestrator run failed** (run [#${{ github.run_number }}](${RUN_URL}))
-
-          - **Trigger label:** \`${LABEL}\`
-          - **Likely cause:** Agent idle timeout (15 min with no output from client or server)
-          - **Recovery:** Remove and re-apply the \`${LABEL}\` label to retry, or manually complete the stalled step.
-          - **Trace artifacts:** Available in the [run artifacts](${RUN_URL}#artifacts)
-          EOF
-          )"
+          bash ./scripts/post-failure-comment.sh \
+            "${{ github.event.issue.number }}" \
+            "${{ github.event.label.name }}" \
+            "${{ github.event.issue.title }}" \
+            "${{ github.actor }}" \
+            "${{ github.event_name }}" \
+            "${{ github.event.action }}"
 
       - name: Dump server-side logs from devcontainer
         if: always() && vars.DEBUG_ORCHESTRATOR == 'true'
@@ -257,30 +250,15 @@ jobs:
             "
           echo "::endgroup::"
 
-      - name: Collect trace artifacts from devcontainer
+      - name: Collect trace artifacts and print job summary
         if: always()
         run: |
-          mkdir -p /tmp/trace-artifacts
-          # Copy rotating log files out of the devcontainer
-          devcontainer exec \
-            --workspace-folder . \
-            --config .devcontainer/devcontainer.json \
-            -- bash -c "
-              mkdir -p /tmp/trace-bundle;
-              cp ~/.local/share/opencode/log/*.log /tmp/trace-bundle/ 2>/dev/null || true;
-              cp /tmp/opencode-serve.log /tmp/trace-bundle/opencode-serve.log 2>/dev/null || true;
-              python3 scripts/trace-extract.py --scrub > /tmp/trace-bundle/subagent-traces.txt 2>&1 || true;
-            "
-          # Pull files from the container to the runner
-          devcontainer exec \
-            --workspace-folder . \
-            --config .devcontainer/devcontainer.json \
-            -- bash -c "cat /tmp/trace-bundle/subagent-traces.txt" > /tmp/trace-artifacts/subagent-traces.txt 2>/dev/null || true
-          devcontainer exec \
-            --workspace-folder . \
-            --config .devcontainer/devcontainer.json \
-            -- bash -c "tar -cf - -C /tmp/trace-bundle ." | tar -xf - -C /tmp/trace-artifacts/ 2>/dev/null || true
-          echo "Trace artifacts collected: $(find /tmp/trace-artifacts/ -maxdepth 1 -type f 2>/dev/null | wc -l) files"
+          bash ./scripts/collect-trace-artifacts.sh \
+            "${{ job.status }}" \
+            "${{ github.event_name }}" \
+            "${{ github.event.action }}" \
+            "${{ github.event.label.name || 'N/A' }}" \
+            "${{ github.actor }}"
 
       - name: Upload trace artifacts
         if: always()
@@ -297,3 +275,29 @@ jobs:
         with:
           path: .memory/
           key: orchestrator-memory-${{ github.repository }}-${{ github.run_id }}
+
+  on-failure:
+    needs: orchestrate
+    if: failure()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    steps:
+      - name: Checkout repository (for scripts)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: scripts/on-failure-handler.sh
+
+      - name: Run failure handler
+        env:
+          GH_TOKEN: ${{ secrets.GH_ORCHESTRATION_AGENT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          bash ./scripts/on-failure-handler.sh \
+            "${{ github.event_name }}" \
+            "${{ github.event.action }}" \
+            "${{ github.event.label.name }}" \
+            "${{ github.actor }}" \
+            "${{ github.event.issue.number }}" \
+            "${{ github.event.issue.title }}"
