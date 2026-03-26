@@ -572,7 +572,32 @@ Server I/O was active at 11:44:44. One 30s check later, write_bytes didn't chang
 
 ---
 
-## Priority Fix Order
+## Completed Issues
+
+> **Last updated:** 2026-03-25
+
+| # | Issue | Fix Summary | Commit |
+|---|-------|-------------|--------|
+| 1 | `issues: labeled` trigger commented out | Uncommented `labeled` in `issues.types`; added `skip-event` job with cumulative `if:` guard that suppresses non-workflow-relevant labels and `traycerai[bot]` actor | — |
+| 2 | Template `.labels.json` missing `agent:*` and workflow labels | Added `agent:queued`, `agent:in-progress`, `agent:success`, `agent:error`, `agent:infra-failure`, `agent:stalled-budget`, `implementation:complete`, `epic`, `story` to `.github/.labels.json`; stripped stale `id`/`node_id`/`url` fields (Issue 17) | — |
+| 3 | No PR created in yankee89-b despite 1h12m orchestrator run | Updated `init-existing-repository` assignment to explicitly create branch and PR as its first action with surfaced error handling | — |
+| 4 | No GitHub Project created in yankee89-b | Created `scripts/create-project.ps1`; added usage instructions to workflow docs; `trigger-project-setup.ps1` call removed (timing dependency, replaced by manual script) | — |
+| 5 | Label set incomplete in yankee89-b | Covered by Issue 2 fix (template `.labels.json` updated) | — |
+| 10 | Docker COPY order breaks editable install | Reordered `Dockerfile`: `COPY src/` now precedes `uv pip install -e .` | — |
+| 11 | Healthcheck uses `curl` instead of Python | Replaced `curl`-based healthcheck with `python -c "import urllib.request; urllib.request.urlopen(...)"` in `docker-compose.yml` | — |
+| 16 | Traycerai bot edits trigger redundant orchestrator runs | Covered by Issue 1 fix (`skip-event` job excludes `traycerai[bot]` actor) | — |
+| 17 | `.labels.json` URLs point to `nam20485/AgentAsAService` | Stripped stale `id`, `node_id`, `url` fields from all entries in `.github/.labels.json` | — |
+| 18 | Concurrent delegation artificially limited to 2 in orchestrator prompt | Removed all three concurrent-limit references from `.opencode/agents/orchestrator.md` and `AGENTS.md`; depth limit (≤2 nesting levels) preserved | `bc4126c` |
+| 19 | GitHub Project creation blocked — missing `project` OAuth scope | Added `projects: write` to `orchestrator-agent.yml` permissions block; `GH_ORCHESTRATION_AGENT_TOKEN` PAT scope clarified | `7f835c0` |
+| 20 | Agent incorrectly assumes project is .NET-based | Updated `create-project-structure` dynamic workflow to be tech-stack-agnostic; reads tech stack from planning docs | — |
+| 21 | Orchestrator idle-kill exits code 0, masking failures; no SIGKILL escalation | Wrapper exits 1 on watchdog fire; idle/ceiling kills annotated as `::error::`; SIGKILL sent after 10s if SIGTERM doesn't exit the process | `cafd0b0` |
+| 22 | Watchdog race condition — premature idle-kill during active subagent work | Replaced log-mtime fallback with `_last_server_io_time` timestamp; kill only fires if server I/O truly inactive for 15 full minutes | `5d89c97` |
+
+**Deferred (not yet implemented):** Issues 6, 7, 8, 9, 12, 13, 14, 15 — all target generated repo code (sentinel, notifier, queue). Will be addressed during the implementation phase.
+
+---
+
+
 
 ### Phase 1 — Unblock the orchestrator cascade (P0)
 
