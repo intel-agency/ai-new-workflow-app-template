@@ -188,6 +188,26 @@ jobs:
           echo "::notice::devcontainer-opencode.sh exited with code: $EXIT_CODE"
           exit $EXIT_CODE
 
+      - name: Post failure comment on triggering issue
+        if: failure() && github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ secrets.GH_ORCHESTRATION_AGENT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          LABEL="${{ github.event.label.name }}"
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --body "$(cat <<EOF
+          **Orchestrator run failed** (run [#${{ github.run_number }}](${RUN_URL}))
+
+          - **Trigger label:** \`${LABEL}\`
+          - **Likely cause:** Agent idle timeout (15 min with no output from client or server)
+          - **Recovery:** Remove and re-apply the \`${LABEL}\` label to retry, or manually complete the stalled step.
+          - **Trace artifacts:** Available in the [run artifacts](${RUN_URL}#artifacts)
+          EOF
+          )"
+
       - name: Dump server-side logs from devcontainer
         if: always() && vars.DEBUG_ORCHESTRATOR == 'true'
         run: |
