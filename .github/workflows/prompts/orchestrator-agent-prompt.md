@@ -111,12 +111,16 @@ case (type = issues &&
 
           - $completed = extract_epic_from_title(title)
           - $next = find_next_unimplemented_line_item($completed.phase, $completed.line_item)
-          - if $next is null → skip to ##Final with message "All line items are already complete."
+          - if $next is null:
+            - close the current epic issue with a comment "All line items are complete. The implementation plan is fully implemented."
+            - skip to ##Final.
 
           - /orchestrate-dynamic-workflow
               $workflow_name = create-epic-v2 { $phase = $next.phase, $line_item = $next.line_item }
           
-          - if create-epic-v2 succeeds → apply label "orchestration:epic-ready" to the newly-created epic issue.
+          - if create-epic-v2 succeeds:
+            - apply label "orchestration:epic-ready" to the newly-created epic issue.
+            - close the current epic issue with a short comment indicating it is complete and referencing the newly-created epic issue.
           - else → print information about the failure, skip to ##Final.           
         }
 
