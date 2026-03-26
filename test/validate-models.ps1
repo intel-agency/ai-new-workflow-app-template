@@ -154,11 +154,10 @@ foreach ($entry in $toTest) {
         $cmdDisplay = "opencode run --model $fullId --message `"$Prompt`""
         Write-Host "  $cmdDisplay ..."
         $job = Start-Job -ScriptBlock {
-            param($root, $mid, $p)
-            Set-Location $root
-            $out = opencode run --model $mid --message $p 2>&1
+            Set-Location $using:repoRoot
+            $out = opencode run --model $using:fullId --message $using:Prompt 2>&1
             [pscustomobject]@{ Output = $out -join "`n"; ExitCode = $LASTEXITCODE }
-        } -ArgumentList $repoRoot, $fullId, $Prompt
+        }
 
         $remaining = $TimeoutSeconds
         $completed = $null
