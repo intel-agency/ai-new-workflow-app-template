@@ -77,7 +77,7 @@ The existing `pr-approval-and-merge.md` already has robust coverage for comment 
 ## Phase 3: Update Orchestrator Prompt — 4-Step Loop
 
 **Locations to update:**
-- The orchestrator prompt template in `ai-new-workflow-app-template` (e.g., `prompt.ps1`, `orchestrator-supervisor.md`, or the assembled prompt).
+- The orchestrator prompt template in `ai-new-workflow-app-template` (e.g., `scripts/prompt.ps1`, `orchestrator-supervisor.md`, or the assembled prompt).
 - Any references to the sequence in `ai-new-app-template.md` or `.github/ISSUE_TEMPLATE/application-plan.md`.
 
 ### Changes to make

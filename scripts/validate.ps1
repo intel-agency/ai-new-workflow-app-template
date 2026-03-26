@@ -133,9 +133,6 @@ if ($Lint) {
             'PSReviewUnusedParameter'
         )
         $results = @()
-        if (Test-Path './prompt.ps1') {
-            $results += @(Invoke-ScriptAnalyzer -Path ./prompt.ps1 -Severity Warning -ExcludeRule $excludeRules)
-        }
         if (Test-Path './scripts/') {
             $results += @(Invoke-ScriptAnalyzer -Path ./scripts/ -Recurse -Severity Warning -ExcludeRule $excludeRules)
         }
