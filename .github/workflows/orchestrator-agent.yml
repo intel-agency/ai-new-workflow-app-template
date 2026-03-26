@@ -2,12 +2,9 @@ name: orchestrator-agent
 
 on:
   issues:
-    types: [opened, labeled] #, edited, reopened, assigned]
+    types: [labeled] #, opened, edited, reopened, assigned]
   #issue_comment:
   #  types: [created, edited]
-  workflow_run:
-    types: [completed]
-    workflows: ["Pre-build dev container image"]
   # pull_request_review_comment:
   #   types: [created, edited]
   # pull_request_review:
@@ -30,14 +27,14 @@ jobs:
     # When this job runs, its step outputs the event details and explains the skip.
     # Skip cases:
     #   1. traycerai[bot] actor — avoid feedback loops
-    #   2. labeled events for non-workflow labels — only orchestration:plan-approved,
-    #      implementation:ready, and implementation:complete should trigger the orchestrator
+    #   2. labeled events for non-workflow labels — only orchestration:* labels
+    #      and implementation:ready / implementation:complete should trigger the orchestrator
     runs-on: ubuntu-24.04
     if: >-
       github.actor == 'traycerai[bot]' ||
       (github.event_name == 'issues' &&
        github.event.action == 'labeled' &&
-       github.event.label.name != 'orchestration:plan-approved' &&
+       !startsWith(github.event.label.name, 'orchestration:') &&
        github.event.label.name != 'implementation:ready' &&
        github.event.label.name != 'implementation:complete')
     steps:
@@ -62,11 +59,9 @@ jobs:
       github.actor != 'traycerai[bot]' &&
       (github.event_name != 'issues' ||
        github.event.action != 'labeled' ||
-       github.event.label.name == 'orchestration:plan-approved' ||
+       startsWith(github.event.label.name, 'orchestration:') ||
        github.event.label.name == 'implementation:ready' ||
-       github.event.label.name == 'implementation:complete') &&
-      (github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success')
+       github.event.label.name == 'implementation:complete')
     permissions:
       id-token: write
       contents: write
@@ -81,6 +76,8 @@ jobs:
       # Setting them only on a later step leaves the server without auth.
       ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
       KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY: ${{ secrets.KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_ORCHESTRATION_AGENT_TOKEN: ${{ secrets.GH_ORCHESTRATION_AGENT_TOKEN }}
 
@@ -111,7 +108,7 @@ jobs:
 
       - name: Verify devcontainer image exists
         run: |
-          IMAGE="ghcr.io/${{ github.repository }}/devcontainer:main-latest"
+          IMAGE="ghcr.io/intel-agency/workflow-orchestration-prebuild/devcontainer:main-latest"
           if ! docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
             echo "::error::Devcontainer image not found: $IMAGE"
             echo "::error::Run the 'Publish Docker' and 'Pre-build dev container image' workflows first."
@@ -119,7 +116,7 @@ jobs:
           fi
 
       - name: Pull devcontainer image
-        run: docker pull "ghcr.io/${{ github.repository }}/devcontainer:main-latest"
+        run: docker pull "ghcr.io/intel-agency/workflow-orchestration-prebuild/devcontainer:main-latest"
         # Docker automatically skips pulling layers that are already cached on
         # the runner. The image tag is stable (main-latest), so repeated runs
         # on warm runners benefit from the layer cache without extra config.
