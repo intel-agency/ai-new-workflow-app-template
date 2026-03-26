@@ -106,6 +106,18 @@
   "permission": {
     "external_directory": {
       "/tmp/*": "allow"
+    },
+    "mcp_tool": {
+      "sequential-thinking:sequentialthinking": "allow",
+      "memory:create_entities": "allow",
+      "memory:create_relations": "allow",
+      "memory:add_observations": "allow",
+      "memory:delete_entities": "allow",
+      "memory:delete_observations": "allow",
+      "memory:delete_relations": "allow",
+      "memory:read_graph": "allow",
+      "memory:search_nodes": "allow",
+      "memory:open_nodes": "allow"
     }
   },
   "mcp": {
