@@ -202,13 +202,18 @@ case (type = issues &&
           ## Dynamic workflow dispatch — triggered by orchestration:dispatch label.
           ## The issue title defaults to "orchestrate-dynamic-workflow" and the body
           ## contains the workflow name and arguments.
+          - comment on the issue: "🤖 Orchestrator triggered — matched `orchestration:dispatch` clause. Parsing dispatch body..."
           - $dispatch = parse_workflow_dispatch_body(body)
           - if $dispatch is null → comment on the issue with an error explaining the body could not be parsed, then skip to ##Final.
+          - comment on the issue: "🤖 Orchestrator triggered — invoking `{$dispatch.workflow_name}` dynamic workflow..."
           - /orchestrate-dynamic-workflow
               $workflow_name = $dispatch.workflow_name { ...$dispatch.args }
-          - after the workflow completes, comment on the issue with a summary of the workflow's execution and its results.
-            - if the workflow succeeds, close the issue with a short comment indicating success.
-            - if the workflow fails, leave the issue open and comment with details about the failure and potential next steps.
+          - if the workflow succeeds:
+            - comment on the issue: "✅ `{$dispatch.workflow_name}` completed successfully."
+            - close the issue with a comment: "🏁 Dispatch complete — `{$dispatch.workflow_name}` finished with no errors."
+          - if the workflow fails:
+            - comment on the issue: "❌ `{$dispatch.workflow_name}` failed. See details below:\n{summary of failure reason and any potential next steps}"
+            - leave the issue open.
        }
 
 case (default)
