@@ -18,7 +18,7 @@ the traits that matter most for their role, and the best available model from `o
 
 | Agent | Current Model | Key Required Traits | Best Model | Rationale | Optimal? |
 |---|---|---|---|---|:---:|
-| **orchestrator** | `zai-coding-plan/glm-5` | Long context (reads all event + plan docs), strong instruction-following, reliable delegation, structured output | `google/gemini-3.1-pro-preview` | 2M context would help; but gemini is unproven at orchestration — validate in current roles first | ⏸ |
+| **orchestrator** | `zai-coding-plan/glm-5` | Long context (reads all event + plan docs), strong instruction-following, reliable delegation, structured output | `zai-coding-plan/glm-5` | Performing well in production; do not change | ✅ |
 | **planner** | `google/gemini-3.1-pro-preview` | Longest context (reads all plan_docs), strong reasoning, structured output (milestones/dependencies) | `google/gemini-3.1-pro-preview` | 2M context essential; best at synthesizing large docs into structured roadmaps | ✅ |
 | **researcher** | `google/gemini-3.1-pro-preview` | Long context (reads many sources), synthesis, citation accuracy | `google/gemini-3.1-pro-preview` | 2M context handles many simultaneous sources; excels at distillation | ✅ |
 | **agent-instructions-expert** | `google/gemini-3.1-pro-preview` | Long context (reads remote instruction repos), accurate retrieval, minimal hallucination | `google/gemini-3.1-pro-preview` | Needs to retrieve and summarize large instruction docs accurately | ✅ |
@@ -45,7 +45,7 @@ the traits that matter most for their role, and the best available model from `o
 |---|---|---|
 | **frontend-developer** | `glm-5` → `openai/gpt-5.4` | Design/a11y domain knowledge — different provider, worth trying |
 | **ux-ui-designer** | (default `glm-5`) → `openai/gpt-5.4` | Same rationale |
-| **orchestrator** | hold on `glm-5` | Gemini unproven at orchestration; validate in planner/researcher roles first |
+| **orchestrator** | keep `glm-5` | Performing well in production — do not change |
 | **cloud-infra-expert** | hold on `glm-5` | Same — revisit after gemini validated |
 | **product-manager** | hold on `glm-5` | Same — revisit after gemini validated |
 | **developer** | keep `glm-5` | Empirically outperforms kimi on complex tasks |
