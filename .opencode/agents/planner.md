@@ -1,7 +1,7 @@
 ---
 description: Converts strategic goals into sequenced milestones with dependencies and acceptance criteria
 mode: all
-model: google/gemini-3.1-pro-preview
+model: zai-coding-plan/glm-5
 temperature: 0.1
 tools:
   read: true

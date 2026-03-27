@@ -78,6 +78,9 @@ jobs:
       KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY: ${{ secrets.KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY }}
       KIMI_API_KEY: ${{ secrets.KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # Both names required: GEMINI_API_KEY so devcontainer.json ${localEnv:GEMINI_API_KEY} resolves,
+      # and GOOGLE_GENERATIVE_AI_API_KEY for tools that read it directly.
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       OPENCODE_GEMINI_PROJECT_ID: gemini-code-assist-490720
       GOOGLE_CLOUD_PROJECT: gemini-code-assist-490720

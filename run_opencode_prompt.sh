@@ -228,6 +228,7 @@ TAIL_PID=$!
 # clearly distinguishes server-side subagent activity from client output.
 # We track the server log position so we only show NEW lines (not startup noise).
 SERVER_TAIL_PID=""
+SERVER_TAIL_RAW_PID=""  # PID of the 'tail -f' process (must be killed to avoid orphan)
 # Patterns suppressed from server log streaming — these are per-token / init noise:
 #   service=bus                  → one line per LLM token delta (message.part.delta/updated)
 #   service=tool.registry        → tool init/teardown chatter on every session loop
@@ -250,12 +251,19 @@ SERVER_TAIL_PID=""
 _SERVER_LOG_NOISE='service=bus |service=tool\.registry |service=permission |service=bash-tool |service=provider |service=lsp |service=file\.time |service=snapshot |cwd=.*tracking|service=session\.processor |service=session\.compaction |service=session\.prompt status=|service=format |service=vcs |service=storage |ruleset=\[\{"permission|action=\{"permission|mcp stderr: .*running on'
 if [[ -f "$SERVER_LOG" ]]; then
     _server_log_start_lines=$(wc -l < "$SERVER_LOG" 2>/dev/null || echo 0)
-    # tail from current position onward, suppress noise, prefix each line with [server]
-    tail -f -n +$(( _server_log_start_lines + 1 )) "$SERVER_LOG" 2>/dev/null | \
-        grep -Ev "$_SERVER_LOG_NOISE" | \
-        sed -u 's/^/[server] /' &
+    # Use a FIFO to separate the 'tail -f' PID from the filter pipeline so we can
+    # kill 'tail -f' explicitly during cleanup. Without this, killing only the last
+    # pipeline member (sed) leaves 'tail -f' orphaned: since the setsid server keeps
+    # writing to the log file indefinitely, the orphaned 'tail -f' has no EOF signal
+    # and holds the devcontainer exec session open forever.
+    _server_log_pipe=$(mktemp -u /tmp/opencode-server-tail.XXXXXX)
+    mkfifo "$_server_log_pipe"
+    tail -f -n +$(( _server_log_start_lines + 1 )) "$SERVER_LOG" 2>/dev/null > "$_server_log_pipe" &
+    SERVER_TAIL_RAW_PID=$!
+    grep -Ev "$_SERVER_LOG_NOISE" < "$_server_log_pipe" | sed -u 's/^/[server] /' &
     SERVER_TAIL_PID=$!
-    echo "Server log tailer started (pid ${SERVER_TAIL_PID}), streaming from line $(( _server_log_start_lines + 1 ))"
+    rm -f "$_server_log_pipe"  # safe to remove after both ends are open
+    echo "Server log tailer started (tail pid ${SERVER_TAIL_RAW_PID} filter pid ${SERVER_TAIL_PID}), streaming from line $(( _server_log_start_lines + 1 ))"
 else
     echo "Server log not found at ${SERVER_LOG} — server-side traces will not be streamed"
 fi
@@ -425,11 +433,21 @@ wait "$OPENCODE_PID" 2>/dev/null
 OPENCODE_EXIT=$?
 kill "$TAIL_PID" 2>/dev/null
 wait "$TAIL_PID" 2>/dev/null
-# Stop the server log tailer
+# Stop the server log tailer — must kill 'tail -f' (SERVER_TAIL_RAW_PID) explicitly.
+# Killing only the filter pipeline end (SERVER_TAIL_PID / sed) leaves 'tail -f' orphaned:
+# it has no EOF source since the setsid server log keeps growing, so it blocks forever
+# and holds the devcontainer exec cgroup open.
+if [[ -n "${SERVER_TAIL_RAW_PID:-}" ]]; then
+    kill "$SERVER_TAIL_RAW_PID" 2>/dev/null
+    wait "$SERVER_TAIL_RAW_PID" 2>/dev/null
+fi
 if [[ -n "${SERVER_TAIL_PID:-}" ]]; then
     kill "$SERVER_TAIL_PID" 2>/dev/null
     wait "$SERVER_TAIL_PID" 2>/dev/null
 fi
+# Final safety net: kill any remaining background jobs this script spawned
+jobs -p | xargs -r kill 2>/dev/null || true
+wait 2>/dev/null || true
 
 echo ""
 echo "opencode exit code: $OPENCODE_EXIT"

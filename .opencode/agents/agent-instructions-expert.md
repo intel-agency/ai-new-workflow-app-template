@@ -1,7 +1,7 @@
 ---
 description: Retrieves and inserts guidance from the canonical agent-instructions repository; returns minimal focused responses to orchestrating agents
 mode: subagent
-model: google/gemini-3.1-pro-preview
+model: zai-coding-plan/glm-5
 temperature: 0.2
 tools:
   read: true
