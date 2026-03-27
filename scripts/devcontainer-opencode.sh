@@ -53,7 +53,7 @@ Shared options:
 
 Environment variables:
   DEVCONTAINER_CONFIG, WORKSPACE_FOLDER, OPENCODE_SERVER_URL
-  ZHIPU_API_KEY, KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY, GITHUB_TOKEN  (required for 'prompt')
+  ZHIPU_API_KEY, KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY, GH_ORCHESTRATION_AGENT_TOKEN  (required for 'prompt')
 EOF
     exit 1
 }
@@ -109,7 +109,7 @@ case "$COMMAND" in
             echo "error: -f <prompt-file> or -p <prompt> is required for the 'prompt' command" >&2
             usage
         fi
-        for var in ZHIPU_API_KEY KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY GITHUB_TOKEN; do
+        for var in ZHIPU_API_KEY KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY GH_ORCHESTRATION_AGENT_TOKEN; do
             if [[ -z "${!var:-}" ]]; then
                 echo "::error::${var} is not set" >&2
                 exit 1
@@ -128,9 +128,9 @@ case "$COMMAND" in
         devcontainer exec "${shared_args[@]}" \
             --remote-env ZHIPU_API_KEY="$ZHIPU_API_KEY" \
             --remote-env KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY="$KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY" \
-            --remote-env GITHUB_TOKEN="$GITHUB_TOKEN" \
-            --remote-env GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_TOKEN" \
-            --remote-env GH_ORCHESTRATION_AGENT_TOKEN="${GH_ORCHESTRATION_AGENT_TOKEN:-}" \
+            --remote-env GITHUB_TOKEN="$GH_ORCHESTRATION_AGENT_TOKEN" \
+            --remote-env GITHUB_PERSONAL_ACCESS_TOKEN="$GH_ORCHESTRATION_AGENT_TOKEN" \
+            --remote-env GH_ORCHESTRATION_AGENT_TOKEN="$GH_ORCHESTRATION_AGENT_TOKEN" \
             -- bash ./run_opencode_prompt.sh -a "$OPENCODE_SERVER_URL" -d "$OPENCODE_SERVER_DIR" "${prompt_arg[@]}"
         ;;
 

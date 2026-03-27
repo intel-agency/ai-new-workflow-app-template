@@ -55,26 +55,19 @@ fi
 
 # Authenticate GitHub CLI and set MCP-compatible token.
 #
-# Token priority:
-#   1. GH_ORCHESTRATION_AGENT_TOKEN — org secret PAT with scopes: repo, workflow,
-#                                      project, read:org. Required for cross-repo access.
-#   2. GITHUB_TOKEN — the built-in Actions token. Scoped to this repo only; use as
-#                    a fallback when no cross-repo access is needed.
-if [[ -n "${GH_ORCHESTRATION_AGENT_TOKEN:-}" ]]; then
-    _active_token="${GH_ORCHESTRATION_AGENT_TOKEN}"
-    echo "Using GH_ORCHESTRATION_AGENT_TOKEN for authentication (cross-repo access enabled)"
-elif [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    _active_token="${GITHUB_TOKEN}"
-    echo "::warning::GH_ORCHESTRATION_AGENT_TOKEN is not set — falling back to GITHUB_TOKEN (this repo only)"
-else
-    echo "::error::Neither GH_ORCHESTRATION_AGENT_TOKEN nor GITHUB_TOKEN is set — gh CLI will not be authenticated" >&2
+# Orchestrator runs require GH_ORCHESTRATION_AGENT_TOKEN — an org-level PAT with
+# scopes: repo, workflow, project, read:org. No fallback to GITHUB_TOKEN.
+if [[ -z "${GH_ORCHESTRATION_AGENT_TOKEN:-}" ]]; then
+    echo "::error::GH_ORCHESTRATION_AGENT_TOKEN is not set — orchestrator execution requires this token" >&2
+    echo "::error::Configure it as an org or repo secret with scopes: repo, workflow, project, read:org" >&2
     exit 1
 fi
+echo "Using GH_ORCHESTRATION_AGENT_TOKEN for authentication"
 
 # Export under all names that tools (gh CLI, MCP servers, opencode) may read.
-export GH_TOKEN="${_active_token}"
-export GITHUB_TOKEN="${_active_token}"
-export GITHUB_PERSONAL_ACCESS_TOKEN="${_active_token}"
+export GH_TOKEN="${GH_ORCHESTRATION_AGENT_TOKEN}"
+export GITHUB_TOKEN="${GH_ORCHESTRATION_AGENT_TOKEN}"
+export GITHUB_PERSONAL_ACCESS_TOKEN="${GH_ORCHESTRATION_AGENT_TOKEN}"
 export OPENCODE_EXPERIMENTAL=1
 
 # Validate the token is accepted by the API and check required scopes.
@@ -88,30 +81,28 @@ if ! echo "${_api_response}" | grep -q '^HTTP'; then
 fi
 echo "gh CLI token validation succeeded"
 
-if [[ -n "${GH_ORCHESTRATION_AGENT_TOKEN:-}" ]]; then
-    _granted_scopes=$(echo "${_api_response}" | grep -i '^X-OAuth-Scopes:' | sed 's/^[^:]*:[[:space:]]*//' | tr -d '\r')
-    echo "Granted OAuth scopes: ${_granted_scopes:-<none>}"
+_granted_scopes=$(echo "${_api_response}" | grep -i '^X-OAuth-Scopes:' | sed 's/^[^:]*:[[:space:]]*//' | tr -d '\r')
+echo "Granted OAuth scopes: ${_granted_scopes:-<none>}"
 
-    # Tokenize the comma-space delimited scope string into an array.
-    IFS=', ' read -ra _scope_tokens <<< "${_granted_scopes}"
+# Tokenize the comma-space delimited scope string into an array.
+IFS=', ' read -ra _scope_tokens <<< "${_granted_scopes}"
 
-    _required_scopes=("repo" "workflow" "project" "read:org")
-    _missing=()
-    for _scope in "${_required_scopes[@]}"; do
-        _found=false
-        for _token in "${_scope_tokens[@]}"; do
-            [[ "${_token}" == "${_scope}" ]] && { _found=true; break; }
-        done
-        [[ "${_found}" == false ]] && _missing+=("${_scope}")
+_required_scopes=("repo" "workflow" "project" "read:org")
+_missing=()
+for _scope in "${_required_scopes[@]}"; do
+    _found=false
+    for _token in "${_scope_tokens[@]}"; do
+        [[ "${_token}" == "${_scope}" ]] && { _found=true; break; }
     done
+    [[ "${_found}" == false ]] && _missing+=("${_scope}")
+done
 
-    if [[ ${#_missing[@]} -gt 0 ]]; then
-        echo "::error::GH_ORCHESTRATION_AGENT_TOKEN is missing required scopes: ${_missing[*]}" >&2
-        echo "::error::Required: ${_required_scopes[*]}  |  Granted: ${_granted_scopes}" >&2
-        exit 1
-    fi
-    echo "All required scopes verified: ${_required_scopes[*]}"
+if [[ ${#_missing[@]} -gt 0 ]]; then
+    echo "::error::GH_ORCHESTRATION_AGENT_TOKEN is missing required scopes: ${_missing[*]}" >&2
+    echo "::error::Required: ${_required_scopes[*]}  |  Granted: ${_granted_scopes}" >&2
+    exit 1
 fi
+echo "All required scopes verified: ${_required_scopes[*]}"
 
 # Embed basic auth credentials into the attach URL if provided
 if [[ -n "$attach_url" && -n "$auth_user" && -n "$auth_pass" ]]; then

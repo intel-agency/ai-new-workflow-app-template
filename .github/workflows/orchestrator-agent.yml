@@ -78,7 +78,6 @@ jobs:
       KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY: ${{ secrets.KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_ORCHESTRATION_AGENT_TOKEN: ${{ secrets.GH_ORCHESTRATION_AGENT_TOKEN }}
 
     steps:
@@ -210,7 +209,7 @@ jobs:
       - name: Post failure comment on triggering issue
         if: failure() && github.event_name == 'issues'
         env:
-          GH_TOKEN: ${{ secrets.GH_ORCHESTRATION_AGENT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_ORCHESTRATION_AGENT_TOKEN }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
           bash ./scripts/post-failure-comment.sh \
@@ -293,7 +292,7 @@ jobs:
 
       - name: Run failure handler
         env:
-          GH_TOKEN: ${{ secrets.GH_ORCHESTRATION_AGENT_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_ORCHESTRATION_AGENT_TOKEN }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
           bash ./scripts/on-failure-handler.sh \

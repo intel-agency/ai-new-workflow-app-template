@@ -117,7 +117,8 @@ scope: repository
     <secrets>
       <item>`ZHIPU_API_KEY` — ZhipuAI model access; set in repo Settings → Secrets.</item>
       <item>`KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY` — Kimi (Moonshot) model access; set in repo Settings → Secrets.</item>
-      <item>`GITHUB_TOKEN` — provided automatically by Actions.</item>
+      <item>`GH_ORCHESTRATION_AGENT_TOKEN` — org-level PAT with scopes: repo, workflow, project, read:org. Required for orchestrator execution. No fallback to `GITHUB_TOKEN`.</item>
+      <item>`GITHUB_TOKEN` — provided automatically by Actions; used only for GHCR login (image pull).</item>
     </secrets>
     <devcontainer_cache>
       Image at `ghcr.io/${{ github.repository }}/devcontainer`. `publish-docker.yml` builds the raw Dockerfile;
@@ -361,18 +362,19 @@ scope: repository
     </runtimes_and_package_managers>
 
     <cli_tools>
-      <tool name="gh">`GitHub CLI` — interact with GitHub API (issues, PRs, repos, releases, actions). Authenticated automatically via `GITHUB_TOKEN` env var in CI; use `gh auth login --with-token` otherwise.</tool>
+      <tool name="gh">`GitHub CLI` — interact with GitHub API (issues, PRs, repos, releases, actions). Authenticated via `GH_ORCHESTRATION_AGENT_TOKEN` exported as `GH_TOKEN`.</tool>
       <tool name="opencode" version="1.2.24">`opencode CLI` — AI agent runtime. Runs agents defined in `.opencode/agents/` with MCP server support.</tool>
       <tool name="git">`Git` — version control (system package + devcontainer feature).</tool>
     </cli_tools>
 
     <github_authentication>
       <summary>
-        GitHub API access is configured at multiple layers to support both `gh` CLI and MCP GitHub server operations.
+        GitHub API access uses a single token: `GH_ORCHESTRATION_AGENT_TOKEN`, an org-level PAT
+        with scopes `repo`, `workflow`, `project`, `read:org`. This token is required for
+        orchestrator execution — there is no fallback to `GITHUB_TOKEN`.
       </summary>
-      <layer name="GITHUB_TOKEN">Provided automatically by GitHub Actions. Passed into the devcontainer via `--remote-env`.</layer>
-      <layer name="GITHUB_PERSONAL_ACCESS_TOKEN">Bridged from `GITHUB_TOKEN` for the `@modelcontextprotocol/server-github` MCP server, which requires this specific env var name. Set in `opencode.json` via the MCP `env` block, in `devcontainer.json` `remoteEnv`, and exported in `run_opencode_prompt.sh`.</layer>
-      <layer name="gh auth login">`run_opencode_prompt.sh` authenticates the `gh` CLI via `echo "$GITHUB_TOKEN" | gh auth login --with-token` before launching opencode.</layer>
+      <layer name="GH_ORCHESTRATION_AGENT_TOKEN">Org-level PAT configured as a repo/org secret. `run_opencode_prompt.sh` exports it as `GH_TOKEN`, `GITHUB_TOKEN`, and `GITHUB_PERSONAL_ACCESS_TOKEN` so that `gh` CLI, MCP GitHub server, and opencode all authenticate with the same token.</layer>
+      <layer name="GITHUB_TOKEN (Actions-provided)">Only used for GHCR login (`docker/login-action`) to pull devcontainer images. Not used for orchestrator API operations.</layer>
     </github_authentication>
 
     <scripts_directory>
