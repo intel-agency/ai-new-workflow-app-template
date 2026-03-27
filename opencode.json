@@ -102,7 +102,7 @@
     }
   },
   "model": "zai-coding-plan/glm-5",
-  "small_model": "zai-coding-plan/glm-4.7-flashx",
+  "small_model": "google/gemini-3.1-flash-lite-preview",
   "permission": {
     "external_directory": {
       "/tmp/*": "allow"
