@@ -5,6 +5,8 @@ the traits that matter most for their role, and the best available model from `o
 
 **Available models** (as of 2026-03-27):
 
+> **Note on `small_model`:** opencode uses a separate `small_model` (`google/gemini-3.1-flash-lite-preview`) for internal housekeeping only — session title generation, short summaries, etc. This is **not** used for any agent work and is unrelated to the assignments below.
+
 | Provider | Models | Context | Notes |
 |---|---|---|---|
 | `zai-coding-plan` | `glm-5`, `glm-4.7`, `glm-4.7-flash`, `glm-4.7-flashx` | 200k | Fast, cost-effective for code tasks |
