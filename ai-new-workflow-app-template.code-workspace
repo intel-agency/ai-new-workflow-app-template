@@ -14,6 +14,7 @@
 			".github/workflows/prebuild-devcontainer.yml"
 		],
 		"python.analysis.typeCheckingMode": "off",
-		"markdown.validate.enabled": true
+		"markdown.validate.enabled": true,
+		"powershell.cwd": "ai-new-workflow-app-template"
 	}
 }

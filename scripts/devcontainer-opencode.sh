@@ -38,6 +38,7 @@ Commands:
   up      Start (or reconnect to) the devcontainer
   start   Ensure opencode serve is running inside the container
   prompt  Dispatch a prompt file to the agent via opencode run --attach
+  status  Show container state, server health, and recent logs
   stop    Gracefully stop the container (keeps it; fast restart via 'up')
   down    Stop and remove the container (full teardown)
 
@@ -89,7 +90,7 @@ case "$COMMAND" in
 
     start)
         abs_workspace="$(cd "$WORKSPACE_FOLDER" && pwd)"
-        container_id="$(docker ps -aq --filter "label=devcontainer.local_folder=${abs_workspace}")"
+        container_id="$(docker ps -aq --latest --filter "label=devcontainer.local_folder=${abs_workspace}")"
         if [[ -z "$container_id" ]]; then
             echo "[devcontainer-opencode] no container found; creating via 'up'"
             devcontainer up "${shared_args[@]}"
@@ -134,10 +135,70 @@ case "$COMMAND" in
             -- bash ./run_opencode_prompt.sh -a "$OPENCODE_SERVER_URL" -d "$OPENCODE_SERVER_DIR" "${prompt_arg[@]}"
         ;;
 
+    status)
+        abs_workspace="$(cd "$WORKSPACE_FOLDER" && pwd)"
+        container_id="$(docker ps -aq --latest --filter "label=devcontainer.local_folder=${abs_workspace}")"
+        echo "=== Devcontainer Status ==="
+        echo "Workspace: ${abs_workspace}"
+        echo ""
+        if [[ -z "$container_id" ]]; then
+            echo "Container: NOT FOUND"
+            echo "  No devcontainer found for this workspace."
+            echo "  Run: bash scripts/devcontainer-opencode.sh up"
+            exit 1
+        fi
+        container_state="$(docker inspect --format '{{.State.Status}}' "$container_id")"
+        container_name="$(docker inspect --format '{{.Name}}' "$container_id" | sed 's|^/||')"
+        echo "Container: ${container_id} (${container_name})"
+        echo "  State: ${container_state}"
+        if [[ "$container_state" != "running" ]]; then
+            echo "  Server: UNAVAILABLE (container not running)"
+            echo "  Run: bash scripts/devcontainer-opencode.sh up"
+            exit 1
+        fi
+        echo ""
+        echo "=== Opencode Server ==="
+        # Variables are intentionally single-quoted — they expand inside the container, not on the host.
+        # shellcheck disable=SC2016
+        devcontainer exec "${shared_args[@]}" \
+            -- bash -c '
+                if [[ -f /tmp/opencode-serve.pid ]]; then
+                    pid=$(cat /tmp/opencode-serve.pid)
+                    if kill -0 "$pid" 2>/dev/null; then
+                        echo "PID: $pid (running)"
+                    else
+                        echo "PID: $pid (DEAD)"
+                    fi
+                else
+                    echo "PID: no pidfile found"
+                fi
+                if curl -s -o /dev/null --connect-timeout 2 http://127.0.0.1:${OPENCODE_SERVER_PORT:-4096}/; then
+                    echo "Health: UP (port ${OPENCODE_SERVER_PORT:-4096})"
+                else
+                    echo "Health: DOWN (port ${OPENCODE_SERVER_PORT:-4096} not responding)"
+                fi
+                echo ""
+                echo "=== Memory ==="
+                mem="${MEMORY_FILE_PATH:-$PWD/.memory/memory.jsonl}"
+                if [[ -f "$mem" ]]; then
+                    echo "Memory file: $mem ($(wc -l < "$mem") entries, $(wc -c < "$mem") bytes)"
+                else
+                    echo "Memory file: $mem (not found)"
+                fi
+                echo ""
+                echo "=== Recent Server Log (last 20 lines) ==="
+                if [[ -f /tmp/opencode-serve.log ]]; then
+                    tail -20 /tmp/opencode-serve.log
+                else
+                    echo "(no log file)"
+                fi
+            '
+        ;;
+
     stop|down)
         # Locate the container via the label devcontainer stamps with the workspace path.
         abs_workspace="$(cd "$WORKSPACE_FOLDER" && pwd)"
-        container_id="$(docker ps -aq --filter "label=devcontainer.local_folder=${abs_workspace}")"
+        container_id="$(docker ps -aq --latest --filter "label=devcontainer.local_folder=${abs_workspace}")"
         if [[ -z "$container_id" ]]; then
             echo "[devcontainer-opencode] no running container found for workspace ${abs_workspace}" >&2
             exit 1
