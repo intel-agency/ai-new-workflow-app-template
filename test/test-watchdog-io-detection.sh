@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # test-watchdog-io-detection.sh — Unit tests for the idle watchdog's I/O
-# detection logic extracted from run_opencode_prompt.sh (Phase 1 A+B).
+# detection logic extracted from run_opencode_prompt.sh.
 #
 # Tests exercise:
-#  1. _read_server_io_bytes() function: awk pattern summing read_bytes + write_bytes
-#  2. IDLE_TIMEOUT_SECS constant value (must be 1800)
-#  3. Activity-detection logic: change detection between iterations
+#  1. _read_server_io_split() function: awk pattern returning "read write" pair
+#  2. Constants: IDLE_TIMEOUT_SECS (900), READ_ONLY_GRACE_SECS (1200)
+#  3. Split activity-detection logic: write vs read change detection
 #  4. Edge cases: missing /proc/io, empty pidfile, zero-byte counters
+#
+# The watchdog tracks read_bytes and write_bytes SEPARATELY:
+#   - write_bytes changes → strong progress signal, resets idle timer fully
+#   - read_bytes changes (writes flat) → weaker signal, grants READ_ONLY_GRACE
+#   - Neither changes → truly idle, standard IDLE_TIMEOUT_SECS applies
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,10 +36,10 @@ assert_eq() {
 echo "=== Watchdog I/O Detection Tests ==="
 
 # ---------------------------------------------------------------------------
-# Test 1: IDLE_TIMEOUT_SECS is 1800 (30 minutes)
+# Test 1: IDLE_TIMEOUT_SECS is 900 (15 minutes)
 # ---------------------------------------------------------------------------
 timeout_val=$(grep -oP '^IDLE_TIMEOUT_SECS=\K[0-9]+' "$TARGET")
-assert_eq "IDLE_TIMEOUT_SECS is 1800" "1800" "$timeout_val"
+assert_eq "IDLE_TIMEOUT_SECS is 900" "900" "$timeout_val"
 
 # ---------------------------------------------------------------------------
 # Test 2: HARD_CEILING_SECS is 5400 (90 minutes)
@@ -43,69 +48,97 @@ ceiling_val=$(grep -oP '^HARD_CEILING_SECS=\K[0-9]+' "$TARGET")
 assert_eq "HARD_CEILING_SECS is 5400" "5400" "$ceiling_val"
 
 # ---------------------------------------------------------------------------
-# Test 3: awk pattern sums read_bytes + write_bytes correctly
+# Test 2b: READ_ONLY_GRACE_SECS is 1200 (20 minutes)
 # ---------------------------------------------------------------------------
-awk_pattern='/^(read|write)_bytes:/{sum+=$2} END{print sum}'
-
-result=$(echo -e "read_bytes: 1000\nwrite_bytes: 500" | awk "$awk_pattern")
-assert_eq "awk sums read+write (1000+500=1500)" "1500" "$result"
-
-result=$(echo -e "read_bytes: 0\nwrite_bytes: 0" | awk "$awk_pattern")
-assert_eq "awk handles zero bytes" "0" "$result"
-
-result=$(echo -e "read_bytes: 4294967296\nwrite_bytes: 4294967296" | awk "$awk_pattern")
-assert_eq "awk handles large values (>4GB)" "8589934592" "$result"
-
-result=$(echo -e "rchar: 999\nwchar: 999\nsyscr: 10\nsyscw: 10\nread_bytes: 200\nwrite_bytes: 300\ncancelled_write_bytes: 50" | awk "$awk_pattern")
-assert_eq "awk ignores non-target lines in /proc/io" "500" "$result"
+grace_val=$(grep -oP '^READ_ONLY_GRACE_SECS=\K[0-9]+' "$TARGET")
+assert_eq "READ_ONLY_GRACE_SECS is 1200" "1200" "$grace_val"
 
 # ---------------------------------------------------------------------------
-# Test 4: awk pattern handles read_bytes-only change (the key fix)
+# Test 3: awk split pattern returns "read write" pair correctly
 # ---------------------------------------------------------------------------
-# Scenario: write_bytes unchanged, read_bytes increased (network API response)
-prev=$(echo -e "read_bytes: 1000\nwrite_bytes: 500" | awk "$awk_pattern")
-cur=$(echo -e "read_bytes: 2000\nwrite_bytes: 500" | awk "$awk_pattern")
-if [[ "$cur" != "$prev" ]]; then
-    pass "detects activity when only read_bytes changes"
+awk_split_pattern='/^read_bytes:/{r=$2} /^write_bytes:/{w=$2} END{print r, w}'
+
+result=$(echo -e "read_bytes: 1000\nwrite_bytes: 500" | awk "$awk_split_pattern")
+assert_eq "awk split returns 'read write' pair" "1000 500" "$result"
+
+result=$(echo -e "read_bytes: 0\nwrite_bytes: 0" | awk "$awk_split_pattern")
+assert_eq "awk split handles zero bytes" "0 0" "$result"
+
+result=$(echo -e "read_bytes: 4294967296\nwrite_bytes: 4294967296" | awk "$awk_split_pattern")
+assert_eq "awk split handles large values (>4GB)" "4294967296 4294967296" "$result"
+
+result=$(echo -e "rchar: 999\nwchar: 999\nsyscr: 10\nsyscw: 10\nread_bytes: 200\nwrite_bytes: 300\ncancelled_write_bytes: 50" | awk "$awk_split_pattern")
+assert_eq "awk split ignores non-target lines in /proc/io" "200 300" "$result"
+
+# ---------------------------------------------------------------------------
+# Test 4: Split change detection logic
+# ---------------------------------------------------------------------------
+# Helper: extract read and write from awk output
+_split() { echo "$1" | awk "$awk_split_pattern"; }
+
+# Scenario 4a: write_bytes increased → write_active=true
+prev=$(_split "$(echo -e "read_bytes: 1000\nwrite_bytes: 500")")
+cur=$(_split "$(echo -e "read_bytes: 1000\nwrite_bytes: 700")")
+prev_w=$(echo "$prev" | awk '{print $2}')
+cur_w=$(echo "$cur" | awk '{print $2}')
+if [[ "$cur_w" != "$prev_w" ]]; then
+    pass "detects write activity when write_bytes changes"
 else
-    fail "detects activity when only read_bytes changes (prev=$prev cur=$cur)"
+    fail "detects write activity when write_bytes changes (prev=$prev_w cur=$cur_w)"
 fi
 
-# Scenario: read_bytes unchanged, write_bytes increased (disk write)
-prev=$(echo -e "read_bytes: 1000\nwrite_bytes: 500" | awk "$awk_pattern")
-cur=$(echo -e "read_bytes: 1000\nwrite_bytes: 700" | awk "$awk_pattern")
-if [[ "$cur" != "$prev" ]]; then
-    pass "detects activity when only write_bytes changes"
+# Scenario 4b: read_bytes increased, write_bytes unchanged → read_active=true, write_active=false
+prev=$(_split "$(echo -e "read_bytes: 1000\nwrite_bytes: 500")")
+cur=$(_split "$(echo -e "read_bytes: 2000\nwrite_bytes: 500")")
+prev_r=$(echo "$prev" | awk '{print $1}')
+cur_r=$(echo "$cur" | awk '{print $1}')
+prev_w=$(echo "$prev" | awk '{print $2}')
+cur_w=$(echo "$cur" | awk '{print $2}')
+if [[ "$cur_r" != "$prev_r" && "$cur_w" == "$prev_w" ]]; then
+    pass "detects read-only activity (reads changed, writes flat)"
 else
-    fail "detects activity when only write_bytes changes (prev=$prev cur=$cur)"
+    fail "detects read-only activity (prev_r=$prev_r cur_r=$cur_r prev_w=$prev_w cur_w=$cur_w)"
 fi
 
-# Scenario: both unchanged (truly idle)
-prev=$(echo -e "read_bytes: 1000\nwrite_bytes: 500" | awk "$awk_pattern")
-cur=$(echo -e "read_bytes: 1000\nwrite_bytes: 500" | awk "$awk_pattern")
+# Scenario 4c: both unchanged (truly idle)
+prev=$(_split "$(echo -e "read_bytes: 1000\nwrite_bytes: 500")")
+cur=$(_split "$(echo -e "read_bytes: 1000\nwrite_bytes: 500")")
 if [[ "$cur" == "$prev" ]]; then
     pass "reports no activity when both counters unchanged"
 else
     fail "reports no activity when both counters unchanged (prev=$prev cur=$cur)"
 fi
 
-# ---------------------------------------------------------------------------
-# Test 5: _read_server_io_bytes function exists and uses correct awk pattern
-# ---------------------------------------------------------------------------
-if grep -q '_read_server_io_bytes()' "$TARGET"; then
-    pass "_read_server_io_bytes function exists"
+# Scenario 4d: both changed → both active
+prev=$(_split "$(echo -e "read_bytes: 1000\nwrite_bytes: 500")")
+cur=$(_split "$(echo -e "read_bytes: 2000\nwrite_bytes: 700")")
+prev_r=$(echo "$prev" | awk '{print $1}')
+cur_r=$(echo "$cur" | awk '{print $1}')
+prev_w=$(echo "$prev" | awk '{print $2}')
+cur_w=$(echo "$cur" | awk '{print $2}')
+if [[ "$cur_r" != "$prev_r" && "$cur_w" != "$prev_w" ]]; then
+    pass "detects dual activity when both counters change"
 else
-    fail "_read_server_io_bytes function exists"
+    fail "detects dual activity (prev_r=$prev_r cur_r=$cur_r prev_w=$prev_w cur_w=$cur_w)"
 fi
 
-if grep -q 'awk.*read|write.*_bytes.*sum' "$TARGET"; then
-    pass "_read_server_io_bytes uses sum pattern"
+# ---------------------------------------------------------------------------
+# Test 5: _read_server_io_split function exists and uses correct awk pattern
+# ---------------------------------------------------------------------------
+if grep -q '_read_server_io_split()' "$TARGET"; then
+    pass "_read_server_io_split function exists"
 else
-    fail "_read_server_io_bytes uses sum pattern"
+    fail "_read_server_io_split function exists"
+fi
+
+if grep -q 'awk.*read_bytes.*write_bytes.*END{print r, w}' "$TARGET"; then
+    pass "_read_server_io_split uses split pattern"
+else
+    fail "_read_server_io_split uses split pattern"
 fi
 
 # ---------------------------------------------------------------------------
-# Test 6: No stale references to old function/variable names
+# Test 6: No stale references to old single-metric approaches
 # ---------------------------------------------------------------------------
 if grep -q '_read_server_write_bytes' "$TARGET"; then
     fail "no stale _read_server_write_bytes references"
@@ -113,20 +146,34 @@ else
     pass "no stale _read_server_write_bytes references"
 fi
 
-if grep -q '_cur_server_write' "$TARGET"; then
-    fail "no stale _cur_server_write references"
+# The old summed approach function name
+if grep -q '_read_server_io_bytes' "$TARGET"; then
+    fail "no stale _read_server_io_bytes references"
 else
-    pass "no stale _cur_server_write references"
+    pass "no stale _read_server_io_bytes references"
 fi
 
-if grep -q '_prev_server_write' "$TARGET"; then
-    fail "no stale _prev_server_write references"
+# Old summed variables
+if grep -q '_prev_server_io' "$TARGET"; then
+    fail "no stale _prev_server_io references"
 else
-    pass "no stale _prev_server_write references"
+    pass "no stale _prev_server_io references"
+fi
+
+if grep -q '_cur_server_io' "$TARGET"; then
+    fail "no stale _cur_server_io references"
+else
+    pass "no stale _cur_server_io references"
+fi
+
+if grep -q '_last_server_io_time' "$TARGET"; then
+    fail "no stale _last_server_io_time references"
+else
+    pass "no stale _last_server_io_time references"
 fi
 
 # ---------------------------------------------------------------------------
-# Test 7: _read_server_io_bytes with simulated /proc/io via temp dir
+# Test 7: _read_server_io_split with simulated /proc/io via temp dir
 # ---------------------------------------------------------------------------
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
@@ -145,32 +192,39 @@ write_bytes: 8192
 cancelled_write_bytes: 0
 EOF
 
-# Source only the function by extracting it, providing required vars
-_read_server_io_bytes() {
+# Local replica of the function for testing
+_read_server_io_split() {
     local pidfile="$tmpdir/server.pid"
     if [[ -f "$pidfile" ]]; then
         local spid
         spid=$(cat "$pidfile" 2>/dev/null)
         if [[ -n "$spid" && -f "$tmpdir/proc/$spid/io" ]]; then
-            awk '/^(read|write)_bytes:/{sum+=$2} END{print sum}' "$tmpdir/proc/$spid/io" 2>/dev/null
+            awk '/^read_bytes:/{r=$2} /^write_bytes:/{w=$2} END{print r, w}' \
+                "$tmpdir/proc/$spid/io" 2>/dev/null
             return
         fi
     fi
     echo ""
 }
 
-result=$(_read_server_io_bytes)
-assert_eq "function reads simulated /proc/io (4096+8192=12288)" "12288" "$result"
+result=$(_read_server_io_split)
+assert_eq "function reads simulated /proc/io (read=4096 write=8192)" "4096 8192" "$result"
+
+# Verify individual components
+result_read=$(echo "$result" | awk '{print $1}')
+result_write=$(echo "$result" | awk '{print $2}')
+assert_eq "split read component" "4096" "$result_read"
+assert_eq "split write component" "8192" "$result_write"
 
 # Test with missing pidfile
 rm -f "$tmpdir/server.pid"
-result=$(_read_server_io_bytes)
+result=$(_read_server_io_split)
 assert_eq "function returns empty for missing pidfile" "" "$result"
 
 # Test with missing /proc/io
 echo "$fake_pid" > "$tmpdir/server.pid"
 rm -f "$tmpdir/proc/$fake_pid/io"
-result=$(_read_server_io_bytes)
+result=$(_read_server_io_split)
 assert_eq "function returns empty for missing /proc/io" "" "$result"
 
 # ---------------------------------------------------------------------------

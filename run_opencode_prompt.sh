@@ -182,12 +182,23 @@ echo "Starting opencode at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 # file (stdout/stderr of `opencode serve`) is NOT actively written either — it
 # only contains startup messages. However the server PROCESS is busy (database
 # writes, LLM API calls, tool execution). We detect this by reading the server
-# process's cumulative I/O counters from /proc/<pid>/io. If read_bytes or
-# write_bytes increases between checks the server is actively working, even if
-# no log files are changing. We only consider the process idle when the client
-# output is stale AND the server process shows no new I/O within the timeout
-# window.
-IDLE_TIMEOUT_SECS=1800  # 30 minutes of no output
+# process's cumulative I/O counters from /proc/<pid>/io.
+#
+# We track read_bytes and write_bytes SEPARATELY with different semantics:
+#   - write_bytes changing → strong signal of genuine progress (DB writes, file
+#     output, tool results). Resets the idle timer fully.
+#   - read_bytes changing (but writes flat) → weaker signal. The process may be
+#     ingesting API responses, streaming model tokens, or just background socket
+#     reads. Grants a shorter READ_ONLY_GRACE period before treating as idle.
+#   - Neither changing → truly idle.
+#
+# This avoids two failure modes:
+#   1. write_bytes-only monitoring kills subagents doing network-heavy work
+#      (PR reviews, API calls) where write_bytes plateaus for >15 min.
+#   2. Summing read+write bytes makes idle detection impossible because
+#      background socket reads increment read_bytes perpetually.
+IDLE_TIMEOUT_SECS=900           # 15 minutes of total I/O silence → kill
+READ_ONLY_GRACE_SECS=1200       # 20 minutes with reads-only (no writes) → kill
 HARD_CEILING_SECS=5400  # 90-minute absolute safety net
 OUTPUT_LOG=$(mktemp /tmp/opencode-output.XXXXXX)
 SERVER_LOG="${OPENCODE_SERVER_LOG:-/tmp/opencode-serve.log}"
@@ -222,18 +233,22 @@ TAIL_PID=$!
 
 START_TIME=$(date +%s)
 IDLE_KILLED=0
-_prev_server_io=""              # tracks server process I/O bytes between iterations
-_last_server_io_time=$START_TIME  # last time server I/O was observed active
+_prev_server_read=""            # tracks server process read_bytes
+_prev_server_write=""           # tracks server process write_bytes
+_last_write_time=$START_TIME    # last time write_bytes was observed changing
+_last_read_time=$START_TIME     # last time read_bytes was observed changing
 
-# _read_server_io_bytes: read cumulative read_bytes + write_bytes from the server
-# process. Returns the sum via stdout; empty string if unavailable.
-_read_server_io_bytes() {
+# _read_server_io_split: read cumulative read_bytes and write_bytes from the
+# server process. Outputs "read_bytes write_bytes" (space-separated) via stdout;
+# empty string if unavailable.
+_read_server_io_split() {
     local pidfile="$SERVER_PIDFILE"
     if [[ -f "$pidfile" ]]; then
         local spid
         spid=$(cat "$pidfile" 2>/dev/null)
         if [[ -n "$spid" && -f "/proc/$spid/io" ]]; then
-            awk '/^(read|write)_bytes:/{sum+=$2} END{print sum}' "/proc/$spid/io" 2>/dev/null
+            awk '/^read_bytes:/{r=$2} /^write_bytes:/{w=$2} END{print r, w}' \
+                "/proc/$spid/io" 2>/dev/null
             return
         fi
     fi
@@ -254,19 +269,32 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
     output_last_mod=$(stat -c %Y "$OUTPUT_LOG" 2>/dev/null || echo "$now")
     output_idle=$(( now - output_last_mod ))
 
-    # --- Server activity detection ---
-    # Primary: check if the server process is performing I/O (database writes,
-    # LLM API calls, tool execution) by reading /proc/<pid>/io read_bytes +
-    # write_bytes. This works even when the server log file is not being updated.
-    # Fallback: server log file mtime (in case /proc/io is unavailable).
-    server_io_active=false
-    _cur_server_io=$(_read_server_io_bytes)
-    if [[ -n "$_cur_server_io" ]]; then
-        if [[ -n "$_prev_server_io" && "$_cur_server_io" != "$_prev_server_io" ]]; then
-            server_io_active=true
-            _last_server_io_time=$now
+    # --- Server activity detection (split read/write tracking) ---
+    # read_bytes and write_bytes are tracked independently. write_bytes is the
+    # primary progress signal; read_bytes provides a weaker "still alive" hint
+    # with a shorter grace period to avoid masking genuine stalls.
+    write_active=false
+    read_active=false
+    _cur_server_read=""
+    _cur_server_write=""
+    _io_split=$(_read_server_io_split)
+    if [[ -n "$_io_split" ]]; then
+        read _cur_server_read _cur_server_write <<< "$_io_split"
+
+        # Detect write activity (strong progress signal)
+        if [[ -n "$_prev_server_write" && "$_cur_server_write" != "$_prev_server_write" ]]; then
+            write_active=true
+            _last_write_time=$now
         fi
-        _prev_server_io="$_cur_server_io"
+
+        # Detect read activity (weaker "alive" signal)
+        if [[ -n "$_prev_server_read" && "$_cur_server_read" != "$_prev_server_read" ]]; then
+            read_active=true
+            _last_read_time=$now
+        fi
+
+        _prev_server_read="$_cur_server_read"
+        _prev_server_write="$_cur_server_write"
     fi
 
     # Server log mtime as a secondary signal (only relevant when /proc/io unavailable)
@@ -277,18 +305,28 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
         server_log_idle=$output_idle
     fi
 
-    # Determine effective server idle time.
-    # Use time-since-last-I/O-activity as the primary measure. This avoids
-    # the race condition where a single 30s I/O pause causes server_idle to
-    # jump from 0 to the full runtime (because server_log_idle reflects
-    # server startup, not last activity). Only fall back to server_log_idle
-    # when /proc/io was never available (e.g. non-Linux or PID file missing).
-    if [[ "$server_io_active" == true ]]; then
+    # Determine effective server idle time using tiered read/write logic:
+    #   - write_bytes active → definitely not idle (strong progress signal)
+    #   - read_bytes active but writes flat → grant READ_ONLY_GRACE period
+    #   - neither active → standard idle timeout (IDLE_TIMEOUT_SECS)
+    #   - /proc/io unavailable → fall back to server log mtime
+    write_idle=$(( now - _last_write_time ))
+    read_idle=$(( now - _last_read_time ))
+    server_io_active=false
+
+    if [[ "$write_active" == true ]]; then
+        # Writes happening → strong progress signal, not idle
         server_idle=0
-    elif [[ -n "$_cur_server_io" ]]; then
-        # /proc/io is available but I/O bytes didn't change this interval.
-        # Compute idle from when I/O was LAST seen active — not from startup.
-        server_idle=$(( now - _last_server_io_time ))
+        server_io_active=true
+    elif [[ "$read_active" == true && $write_idle -lt $READ_ONLY_GRACE_SECS ]]; then
+        # Reads happening, writes paused but within grace → still alive
+        server_idle=0
+        server_io_active=true
+    elif [[ -n "$_cur_server_write" ]]; then
+        # /proc/io is available but no qualifying activity this interval.
+        # If reads are active but grace expired, use write_idle as the measure.
+        # If neither active, use whichever has been idle longer.
+        server_idle=$write_idle
     else
         # /proc/io not available at all — fall back to log mtime
         server_idle=$server_log_idle
@@ -303,11 +341,15 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
     fi
 
     if [[ "${DEBUG_ORCHESTRATOR:-}" == "true" ]]; then
-        echo "[watchdog] elapsed=${elapsed}s output_idle=${output_idle}s server_idle=${server_idle}s server_io_active=${server_io_active} effective_idle=${idle}s log_size=${log_size}b log_lines=${log_lines} pid=$OPENCODE_PID server_io_bytes=${_cur_server_io:-n/a} last_io=$(( now - _last_server_io_time ))s_ago"
+        echo "[watchdog] elapsed=${elapsed}s output_idle=${output_idle}s server_idle=${server_idle}s write_active=${write_active} read_active=${read_active} effective_idle=${idle}s log_size=${log_size}b log_lines=${log_lines} pid=$OPENCODE_PID read_bytes=${_cur_server_read:-n/a} write_bytes=${_cur_server_write:-n/a} write_idle=${write_idle:-n/a}s read_idle=${read_idle:-n/a}s"
     elif [[ $output_idle -ge 60 && "$server_io_active" == true ]]; then
         # Emit a brief note when client output is stale but server is active
         # (i.e. subagent delegation in progress) so CI isn't silent for minutes
-        echo "[watchdog] client output idle ${output_idle}s, server I/O active (io_bytes=${_cur_server_io}) — subagent likely running"
+        if [[ "$write_active" == true ]]; then
+            echo "[watchdog] client output idle ${output_idle}s, server write I/O active (write_bytes=${_cur_server_write}) — subagent likely running"
+        else
+            echo "[watchdog] client output idle ${output_idle}s, server read I/O active (read_bytes=${_cur_server_read}, write_idle=${write_idle}s/${READ_ONLY_GRACE_SECS}s grace) — subagent likely running"
+        fi
     fi
 
     if [[ $elapsed -ge $HARD_CEILING_SECS ]]; then
