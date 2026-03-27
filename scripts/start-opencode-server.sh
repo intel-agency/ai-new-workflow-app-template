@@ -72,13 +72,16 @@ if is_server_ready; then
 fi
 
 # Server runs at DEBUG to capture rich subagent traces in its log file.
+# --print-logs forces the server to emit structured log entries to stderr,
+# which we capture alongside stdout into OPENCODE_SERVER_LOG.
 # This does NOT affect client stdout — the client still runs at INFO.
 OPENCODE_SERVER_LOG_LEVEL="${OPENCODE_SERVER_LOG_LEVEL:-DEBUG}"
-log "starting opencode serve on ${OPENCODE_SERVER_HOSTNAME}:${OPENCODE_SERVER_PORT} (log-level: ${OPENCODE_SERVER_LOG_LEVEL})"
+log "starting opencode serve on ${OPENCODE_SERVER_HOSTNAME}:${OPENCODE_SERVER_PORT} (log-level: ${OPENCODE_SERVER_LOG_LEVEL}, print-logs: on)"
 nohup opencode serve \
   --hostname "$OPENCODE_SERVER_HOSTNAME" \
   --port "$OPENCODE_SERVER_PORT" \
   --log-level "$OPENCODE_SERVER_LOG_LEVEL" \
+  --print-logs \
   >>"$OPENCODE_SERVER_LOG" 2>&1 &
 server_pid=$!
 echo "$server_pid" > "$OPENCODE_SERVER_PIDFILE"

@@ -227,9 +227,26 @@ if ! kill -0 "$OPENCODE_PID" 2>/dev/null; then
 fi
 echo "opencode process $OPENCODE_PID confirmed running after 1s"
 
-# Stream the log to stdout in real-time so CI can see it
+# Stream the client log to stdout in real-time so CI can see it
 tail -f "$OUTPUT_LOG" &
 TAIL_PID=$!
+
+# Stream server-side subagent traces to CI stdout.
+# The server runs at DEBUG with --print-logs, capturing subagent tool calls,
+# session creation, and LLM requests. We tail it with a prefix so CI output
+# clearly distinguishes server-side subagent activity from client output.
+# We track the server log position so we only show NEW lines (not startup noise).
+SERVER_TAIL_PID=""
+if [[ -f "$SERVER_LOG" ]]; then
+    _server_log_start_lines=$(wc -l < "$SERVER_LOG" 2>/dev/null || echo 0)
+    # tail from current position onward, prefix each line with [server]
+    tail -f -n +$(( _server_log_start_lines + 1 )) "$SERVER_LOG" 2>/dev/null | \
+        sed -u 's/^/[server] /' &
+    SERVER_TAIL_PID=$!
+    echo "Server log tailer started (pid ${SERVER_TAIL_PID}), streaming from line $(( _server_log_start_lines + 1 ))"
+else
+    echo "Server log not found at ${SERVER_LOG} — server-side traces will not be streamed"
+fi
 
 START_TIME=$(date +%s)
 IDLE_KILLED=0
@@ -350,6 +367,16 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
         else
             echo "[watchdog] client output idle ${output_idle}s, server read I/O active (read_bytes=${_cur_server_read}, write_idle=${write_idle}s/${READ_ONLY_GRACE_SECS}s grace) — subagent likely running"
         fi
+        # Surface the most recent server log activity for subagent visibility.
+        # Show the last few non-empty lines so operators see what the subagent
+        # is actually doing (tool calls, LLM requests, file operations).
+        if [[ -f "$SERVER_LOG" ]]; then
+            _recent=$(tail -5 "$SERVER_LOG" 2>/dev/null | grep -v '^$' | tail -3)
+            if [[ -n "$_recent" ]]; then
+                echo "[watchdog] recent server activity:"
+                echo "$_recent" | sed 's/^/  | /'
+            fi
+        fi
     fi
 
     if [[ $elapsed -ge $HARD_CEILING_SECS ]]; then
@@ -386,6 +413,11 @@ wait "$OPENCODE_PID" 2>/dev/null
 OPENCODE_EXIT=$?
 kill "$TAIL_PID" 2>/dev/null
 wait "$TAIL_PID" 2>/dev/null
+# Stop the server log tailer
+if [[ -n "${SERVER_TAIL_PID:-}" ]]; then
+    kill "$SERVER_TAIL_PID" 2>/dev/null
+    wait "$SERVER_TAIL_PID" 2>/dev/null
+fi
 
 echo ""
 echo "opencode exit code: $OPENCODE_EXIT"

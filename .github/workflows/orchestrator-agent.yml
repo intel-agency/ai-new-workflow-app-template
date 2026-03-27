@@ -222,7 +222,7 @@ jobs:
             "${{ github.event.action }}"
 
       - name: Dump server-side logs from devcontainer
-        if: always() && vars.DEBUG_ORCHESTRATOR == 'true'
+        if: always()
         run: |
           echo "::group::opencode serve log (server-side)"
           devcontainer exec \
