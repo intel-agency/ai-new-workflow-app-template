@@ -21,12 +21,14 @@ set -euo pipefail
 #   -f <file>     assembled prompt file path (required, or use -p)
 #   -p <prompt>   inline prompt string       (required, or use -f)
 #   -u <url>      opencode server URL        (env: OPENCODE_SERVER_URL, default: http://127.0.0.1:4096)
+#   -d <dir>      server-side working dir    (env: OPENCODE_SERVER_DIR, default: /workspaces/<repo-name>)
 
 DEVCONTAINER_CONFIG="${DEVCONTAINER_CONFIG:-.devcontainer/devcontainer.json}"
 WORKSPACE_FOLDER="${WORKSPACE_FOLDER:-.}"
 OPENCODE_SERVER_URL="${OPENCODE_SERVER_URL:-http://127.0.0.1:4096}"
 PROMPT_FILE=""
 PROMPT_STRING=""
+OPENCODE_SERVER_DIR="${OPENCODE_SERVER_DIR:-}"
 
 usage() {
     cat >&2 <<'EOF'
@@ -47,6 +49,7 @@ Shared options:
   -f <file>     Assembled prompt file path (required, or use -p)
   -p <prompt>   Inline prompt string       (required, or use -f)
   -u <url>      opencode server URL        (default: http://127.0.0.1:4096)
+  -d <dir>      Server-side working dir    (default: /workspaces/<repo-basename>)
 
 Environment variables:
   DEVCONTAINER_CONFIG, WORKSPACE_FOLDER, OPENCODE_SERVER_URL
@@ -62,13 +65,14 @@ fi
 COMMAND="$1"
 shift
 
-while getopts ":c:w:f:p:u:" opt; do
+while getopts ":c:w:f:p:u:d:" opt; do
     case $opt in
         c) DEVCONTAINER_CONFIG="$OPTARG" ;;
         w) WORKSPACE_FOLDER="$OPTARG" ;;
         f) PROMPT_FILE="$OPTARG" ;;
         p) PROMPT_STRING="$OPTARG" ;;
         u) OPENCODE_SERVER_URL="$OPTARG" ;;
+        d) OPENCODE_SERVER_DIR="$OPTARG" ;;
         *) usage ;;
     esac
 done
@@ -117,13 +121,17 @@ case "$COMMAND" in
         else
             prompt_arg=(-f "$PROMPT_FILE")
         fi
+        # Derive default server-side dir from the workspace folder basename
+        if [[ -z "$OPENCODE_SERVER_DIR" ]]; then
+            OPENCODE_SERVER_DIR="/workspaces/$(basename "$(cd "$WORKSPACE_FOLDER" && pwd)")"
+        fi
         devcontainer exec "${shared_args[@]}" \
             --remote-env ZHIPU_API_KEY="$ZHIPU_API_KEY" \
             --remote-env KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY="$KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY" \
             --remote-env GITHUB_TOKEN="$GITHUB_TOKEN" \
             --remote-env GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_TOKEN" \
             --remote-env GH_ORCHESTRATION_AGENT_TOKEN="${GH_ORCHESTRATION_AGENT_TOKEN:-}" \
-            -- bash ./run_opencode_prompt.sh -a "$OPENCODE_SERVER_URL" "${prompt_arg[@]}"
+            -- bash ./run_opencode_prompt.sh -a "$OPENCODE_SERVER_URL" -d "$OPENCODE_SERVER_DIR" "${prompt_arg[@]}"
         ;;
 
     stop|down)
