@@ -1,14 +1,16 @@
 # Orchestrator Agent Prompt
 
-## MANDATORY STARTUP PROTOCOL — DO THIS FIRST
+## MANDATORY STARTUP — DO THESE FIRST, IN ORDER
 
-Before ANY other action, you MUST complete these steps in order:
+**Step 1 — Load Memory (REQUIRED):**
+Call `read_graph` RIGHT NOW before reading anything else. The knowledge graph contains prior run outcomes, project decisions, and cross-run context that inform every decision below. Use what you find to orient yourself — if memory contains state about this project or issue, apply it. Do not skip this step; the graph is persisted across workflow runs specifically so you have this context.
 
-1. **Load Memory**: Call `read_graph` to retrieve existing project context, prior decisions, and patterns.
-2. **Think Sequentially**: Call `sequential_thinking` to analyze the incoming event, identify what type of request it is, plan your approach, and determine which clause will match.
-3. **Then proceed** to the Instructions section below.
+**Step 2 — Read AGENTS.md (if not already in context):**
+If AGENTS.md has not already been loaded into your context, read it now using the `read` tool (`AGENTS.md` in the repo root). It defines the agent roster, coding conventions, mandatory protocols, and tool usage rules that govern this run.
 
-Skipping these steps is a protocol violation. See AGENTS.md `mandatory_tool_protocols` for full requirements.
+**Step 3 — Proceed to Instructions below.**
+
+Use `sequential_thinking` when you face a genuinely complex decision or need to decompose a multi-step delegation plan. It is not required for every action — use your judgment. After completing significant work, call `add_observations` or `create_entities` to persist what you learned for future runs.
 
 ## Instructions
 
