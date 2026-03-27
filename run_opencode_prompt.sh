@@ -229,11 +229,19 @@ TAIL_PID=$!
 # We track the server log position so we only show NEW lines (not startup noise).
 SERVER_TAIL_PID=""
 # Patterns suppressed from server log streaming — these are per-token / init noise:
-#   service=bus           → one line per LLM token delta (message.part.delta/updated)
-#   service=tool.registry → tool init/teardown chatter on every session loop
-#   service=permission    → permission ruleset evaluation (very verbose JSON blobs)
-#   service=bash-tool     → bash shell initialisation line
-_SERVER_LOG_NOISE='service=bus |service=tool\.registry |service=permission |service=bash-tool '
+#   service=bus                  → one line per LLM token delta (message.part.delta/updated)
+#   service=tool.registry        → tool init/teardown chatter on every session loop
+#   service=permission           → permission ruleset evaluation (very verbose JSON blobs)
+#   service=bash-tool            → bash shell initialisation line
+#   service=provider             → provider init/found lines at startup (~9 lines per run)
+#   service=lsp                  → LSP "touching file" on every file read
+#   service=file.time            → file read timing per file access
+#   service=snapshot             → snapshot hash lines emitted every LLM step
+#   cwd=.*tracking               → follow-on cwd line paired with service=snapshot
+#   service=session.processor    → process tick emitted every LLM step
+#   service=session.compaction   → pruning log on compaction
+#   service=session.prompt status= → resolveTools started/completed per step (keep step=N loop and exiting loop)
+_SERVER_LOG_NOISE='service=bus |service=tool\.registry |service=permission |service=bash-tool |service=provider |service=lsp |service=file\.time |service=snapshot |cwd=.*tracking|service=session\.processor |service=session\.compaction |service=session\.prompt status='
 if [[ -f "$SERVER_LOG" ]]; then
     _server_log_start_lines=$(wc -l < "$SERVER_LOG" 2>/dev/null || echo 0)
     # tail from current position onward, suppress noise, prefix each line with [server]
