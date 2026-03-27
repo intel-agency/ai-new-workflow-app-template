@@ -241,7 +241,10 @@ SERVER_TAIL_PID=""
 #   service=session.processor    → process tick emitted every LLM step
 #   service=session.compaction   → pruning log on compaction
 #   service=session.prompt status= → resolveTools started/completed per step (keep step=N loop and exiting loop)
-_SERVER_LOG_NOISE='service=bus |service=tool\.registry |service=permission |service=bash-tool |service=provider |service=lsp |service=file\.time |service=snapshot |cwd=.*tracking|service=session\.processor |service=session\.compaction |service=session\.prompt status='
+#   service=format               → formatter availability check (~27 lines per file write)
+#   service=vcs                  → branch change tracking line per checkout
+#   service=storage              → storage migration lines at startup
+_SERVER_LOG_NOISE='service=bus |service=tool\.registry |service=permission |service=bash-tool |service=provider |service=lsp |service=file\.time |service=snapshot |cwd=.*tracking|service=session\.processor |service=session\.compaction |service=session\.prompt status=|service=format |service=vcs |service=storage '
 if [[ -f "$SERVER_LOG" ]]; then
     _server_log_start_lines=$(wc -l < "$SERVER_LOG" 2>/dev/null || echo 0)
     # tail from current position onward, suppress noise, prefix each line with [server]
