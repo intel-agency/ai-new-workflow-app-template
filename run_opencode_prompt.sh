@@ -244,7 +244,9 @@ SERVER_TAIL_PID=""
 #   service=format               → formatter availability check (~27 lines per file write)
 #   service=vcs                  → branch change tracking line per checkout
 #   service=storage              → storage migration lines at startup
-_SERVER_LOG_NOISE='service=bus |service=tool\.registry |service=permission |service=bash-tool |service=provider |service=lsp |service=file\.time |service=snapshot |cwd=.*tracking|service=session\.processor |service=session\.compaction |service=session\.prompt status=|service=format |service=vcs |service=storage '
+#   ruleset=[{"permission"       → terminal line of multi-line bash permission pre-check blob (huge JSON array)
+#   action={"permission"         → terminal line of multi-line bash permission post-check blob
+_SERVER_LOG_NOISE='service=bus |service=tool\.registry |service=permission |service=bash-tool |service=provider |service=lsp |service=file\.time |service=snapshot |cwd=.*tracking|service=session\.processor |service=session\.compaction |service=session\.prompt status=|service=format |service=vcs |service=storage |ruleset=\[\{"permission|action=\{"permission'
 if [[ -f "$SERVER_LOG" ]]; then
     _server_log_start_lines=$(wc -l < "$SERVER_LOG" 2>/dev/null || echo 0)
     # tail from current position onward, suppress noise, prefix each line with [server]
