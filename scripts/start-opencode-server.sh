@@ -75,9 +75,15 @@ fi
 # --print-logs forces the server to emit structured log entries to stderr,
 # which we capture alongside stdout into OPENCODE_SERVER_LOG.
 # This does NOT affect client stdout — the client still runs at INFO.
+#
+# setsid creates a new process session so the server survives when the
+# parent shell (and its process group) exits — e.g. when launched via
+# `devcontainer exec`, which tears down the entire process group on exit.
+# Plain `nohup ... &` leaves the server in the caller's process group,
+# so `devcontainer exec` cleanup kills it despite the SIGHUP guard.
 OPENCODE_SERVER_LOG_LEVEL="${OPENCODE_SERVER_LOG_LEVEL:-DEBUG}"
 log "starting opencode serve on ${OPENCODE_SERVER_HOSTNAME}:${OPENCODE_SERVER_PORT} (log-level: ${OPENCODE_SERVER_LOG_LEVEL}, print-logs: on)"
-nohup opencode serve \
+setsid opencode serve \
   --hostname "$OPENCODE_SERVER_HOSTNAME" \
   --port "$OPENCODE_SERVER_PORT" \
   --log-level "$OPENCODE_SERVER_LOG_LEVEL" \
