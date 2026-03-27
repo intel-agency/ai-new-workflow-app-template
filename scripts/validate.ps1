@@ -220,6 +220,13 @@ if ($Test) {
                 Write-Host ($output -join "`n")
             }
         }
+        if (Test-Path 'test/test-watchdog-io-detection.sh') {
+            Invoke-Check 'watchdog-io-detection tests' {
+                $output = bash test/test-watchdog-io-detection.sh 2>&1
+                if ($LASTEXITCODE -ne 0) { throw ($output -join "`n") }
+                Write-Host ($output -join "`n")
+            }
+        }
     }
     else { Skip-Check 'bash tests' 'bash not available on this system' }
 }

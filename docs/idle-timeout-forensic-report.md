@@ -298,3 +298,111 @@ opencode exit code: 143
 
 The orchestrator is consistently stalling at the moment it dispatches a subagent via the `Task` tool for PR review/merge operations.
 
+---
+
+## 7. Future Enhancement: Separate Read vs. Write Timeout Windows
+
+### Motivation
+
+Phase 1 sums `read_bytes + write_bytes` into a single I/O activity signal. This solved the immediate problem — network-heavy API reads were invisible to the write-only watchdog. However, treating reads and writes as equivalent loses diagnostic signal and prevents more nuanced idle detection.
+
+`read_bytes` and `write_bytes` carry different semantic meaning:
+
+| Metric | Typical activity | What it signals |
+|--------|-----------------|-----------------|
+| `write_bytes` increasing | Database writes, file output, log emission, tool results | Active *progress* — the process is producing output |
+| `read_bytes` increasing | API response ingestion, model token streaming, file reads | Active *input* — the process is receiving data |
+| `read_bytes` only (writes flat) | Polling a queue, retrying an API, reading logs in a loop | *Possible stall* — data is being consumed but nothing is being produced |
+| `write_bytes` only (reads flat) | Dumping cached data, flushing buffers | Normal tail-end of a task |
+
+### Implementation
+
+Track `read_bytes` and `write_bytes` as separate variables with independent "last changed" timestamps:
+
+```bash
+_read_server_io_split() {
+    local pidfile="$SERVER_PIDFILE"
+    if [[ -f "$pidfile" ]]; then
+        local spid
+        spid=$(cat "$pidfile" 2>/dev/null)
+        if [[ -n "$spid" && -f "/proc/$spid/io" ]]; then
+            # Output "read_bytes write_bytes" as two space-separated values
+            awk '/^read_bytes:/{r=$2} /^write_bytes:/{w=$2} END{print r, w}' \
+                "/proc/$spid/io" 2>/dev/null
+            return
+        fi
+    fi
+    echo ""
+}
+```
+
+Watchdog loop changes:
+
+```bash
+# Read split counters
+read _cur_read _cur_write <<< "$(_read_server_io_split)"
+
+# Detect read activity
+if [[ -n "$_cur_read" && -n "$_prev_read" && "$_cur_read" != "$_prev_read" ]]; then
+    read_active=true
+    _last_read_time=$now
+fi
+
+# Detect write activity
+if [[ -n "$_cur_write" && -n "$_prev_write" && "$_cur_write" != "$_prev_write" ]]; then
+    write_active=true
+    _last_write_time=$now
+fi
+
+_prev_read="$_cur_read"
+_prev_write="$_cur_write"
+
+# Tiered idle detection:
+#   - If writes are active → definitely not idle (hard evidence of progress)
+#   - If reads-only active → grant a separate, shorter grace window
+#   - If neither active → standard idle timeout applies
+read_only_idle=$(( now - _last_write_time ))
+
+if [[ "$write_active" == true ]]; then
+    server_idle=0
+elif [[ "$read_active" == true && $read_only_idle -lt $READ_ONLY_GRACE_SECS ]]; then
+    # Reads happening but no writes — give it a grace period before
+    # treating as idle (may be ingesting a large API response)
+    server_idle=0
+elif [[ -n "$_cur_read" ]]; then
+    server_idle=$(( now - _last_write_time ))
+else
+    server_idle=$server_log_idle
+fi
+```
+
+### Advantages
+
+1. **Read-only stall detection** — If `read_bytes` is climbing but `write_bytes` hasn't moved for `READ_ONLY_GRACE_SECS` (e.g. 10 minutes), the process may be stuck in a polling loop or infinite retry. The current summed approach masks this entirely — as long as *something* changes, the watchdog stays quiet. Separate tracking enables a "reads without writes" alarm.
+
+2. **Diagnostic richness** — Debug log lines can show `read=X write=Y` instead of `io=Z`, enabling forensic analysis to distinguish between:
+   - API-bound phases (reads >> writes): subagent ingesting model responses
+   - Compute-bound phases (writes >> reads): generating code, running tools
+   - Balanced I/O: normal productive execution
+   - Read-only flat-line: potential hang during API retry loops
+
+3. **Tunable grace windows** — Different timeout thresholds for different I/O patterns:
+   - `WRITE_ACTIVE_TIMEOUT=1800` (30 min) — generous window when writes confirm progress
+   - `READ_ONLY_GRACE_SECS=600` (10 min) — shorter leash when only reads are happening (likely waiting on external service, which should have its own timeout)
+   - This prevents a process that's stuck polling an unresponsive API from consuming 30 minutes of CI time
+
+4. **False-positive reduction** — The current summed approach can be fooled by background `read_bytes` from unrelated I/O (e.g., systemd journal reads, inotify, `/proc` self-reads). Write activity is a much stronger signal of genuine progress. Separating them lets the watchdog weight writes more heavily.
+
+### Trade-offs
+
+| Advantage | Cost |
+|-----------|------|
+| Catches read-only stalls that the sum approach misses | Adds ~15 lines to the watchdog loop |
+| Better forensic data in debug logs | Two more tracking variables to maintain |
+| Tunable grace window for read-only phases | One more constant (`READ_ONLY_GRACE_SECS`) to configure |
+| Stronger progress signal from write activity | Slightly more complex idle-decision logic |
+
+### Recommendation
+
+Implement as a **Phase 2 enhancement** after Phase 1 has been validated in production. The current summed approach is correct for the immediate fix — it solved the root cause (invisible network reads). Separate tracking is an optimization that becomes valuable once we have baseline data showing the distribution of read-only vs. write-active phases in real orchestration runs.
+
