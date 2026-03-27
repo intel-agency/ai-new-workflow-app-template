@@ -95,17 +95,36 @@ The devcontainer pulls the prebuild image from GHCR, starts the container, and t
 
 ## 4. Send Your First Prompt
 
-### Inline prompt (simplest)
+### Direct mode (recommended — no server needed)
 
 ```bash
+bash scripts/prompt-direct.sh -p "Say hello and confirm you are operational."
+```
+
+From a file:
+
+```bash
+bash scripts/prompt-direct.sh -f test/fixtures/prompts/hello-world.txt
+```
+
+With a different model:
+
+```bash
+bash scripts/prompt-direct.sh -p "list open issues" -m zai-coding-plan/glm-4.7-flash
+```
+
+> **Direct mode** runs opencode as a one-shot process inside the devcontainer.
+> It handles all env var passthrough automatically. No opencode server daemon needed.
+
+### Server-attach mode (alternative — uses opencode serve daemon)
+
+```bash
+bash scripts/devcontainer-opencode.sh start   # start the server daemon
 bash scripts/devcontainer-opencode.sh prompt -p "Say hello and confirm you are operational."
 ```
 
-### From a prompt file
-
-```bash
-bash scripts/devcontainer-opencode.sh prompt -f test/fixtures/prompts/hello-world.txt
-```
+> **Note**: The server daemon may exit unexpectedly between start and prompt dispatch.
+> If you see `"Session not found"` or `"failed to list agents"`, use direct mode instead.
 
 ### Using the local prompt assembler (fixture-based — simulates CI events)
 
@@ -256,6 +275,7 @@ Host Machine                          Devcontainer (Docker)
 
 | File | Purpose |
 |------|---------|
+| `scripts/prompt-direct.sh` | Direct-mode prompt dispatcher (recommended, no server) |
 | `scripts/devcontainer-opencode.sh` | Main lifecycle CLI (up/start/prompt/status/stop/down) |
 | `scripts/start-opencode-server.sh` | Server daemon bootstrapper (runs inside container) |
 | `scripts/prompt-local.ps1` | PowerShell local prompt dispatcher |
