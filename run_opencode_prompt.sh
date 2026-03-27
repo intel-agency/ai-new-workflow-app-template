@@ -369,7 +369,7 @@ while kill -0 "$OPENCODE_PID" 2>/dev/null; do
         # Show the last few non-empty lines so operators see what the subagent
         # is actually doing (tool calls, LLM requests, file operations).
         if [[ -f "$SERVER_LOG" ]]; then
-            _recent=$(tail -5 "$SERVER_LOG" 2>/dev/null | grep -v '^$' | tail -3)
+            _recent=$(tail -20 "$SERVER_LOG" 2>/dev/null | grep -Ev "$_SERVER_LOG_NOISE" | grep -v '^$' | tail -3)
             if [[ -n "$_recent" ]]; then
                 echo "[watchdog] recent server activity:"
                 echo "$_recent" | sed 's/^/  | /'

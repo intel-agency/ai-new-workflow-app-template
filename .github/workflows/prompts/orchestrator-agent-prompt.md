@@ -286,9 +286,11 @@ case (default)
 
 ## Final
 
-  - **MANDATORY COMPLETION**: Before finishing, persist task outcomes to the knowledge graph:
-    - Call `create_entities` or `add_observations` to store: what was done, what succeeded/failed, decisions made, and any patterns or lessons learned.
-    - This ensures context is available for future orchestration runs.
+  - **MANDATORY COMPLETION — WRITE MEMORY NOW**: You MUST call `add_observations` or `create_entities` before finishing. Do not skip.
+    - What to write: which clause matched, what workflow ran, what succeeded or failed, what the dispatch/issue was, any errors or retries, lessons or patterns discovered.
+    - Use the entity name matching the repo or run (e.g. the repo name or issue number) so future runs can find it with `search_nodes`.
+    - Example: `add_observations(entityName="workflow-run", observations=["project-setup dispatched for repo X", "planner succeeded", "backend-developer timed out on step Y"])`
+    - The memory file is cached across workflow runs — this is the only way to carry context forward. If you skip it, the next run starts blind.
   - Say goodbye! and finish execution.
 
 ## EVENT_DATA
