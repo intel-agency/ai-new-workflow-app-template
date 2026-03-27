@@ -121,7 +121,7 @@ Enable running the full opencode server + devcontainer orchestration stack **loc
 - Create `scripts/setup-local-env.sh` (bash) that:
   - Copies `.env.example` → `.env` if not exists
   - Validates all required vars are set
-  - Optionally handles `docker login ghcr.io` via `gh auth token | docker login ghcr.io -u USERNAME --password-stdin`
+  - Optionally handles `docker login ghcr.io` via `gh auth token | docker login ghcr.io -u "$(gh api user --jq .login)" --password-stdin`
 - `.env` already in `.gitignore`
 
 **Files to create/modify**:

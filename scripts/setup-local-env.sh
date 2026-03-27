@@ -62,7 +62,7 @@ if [[ -f "$ENV_FILE" ]]; then
     # Source only non-comment, non-empty lines as exports
     set -o allexport
     # shellcheck disable=SC1090
-    source <(grep -v '^\s*#' "$ENV_FILE" | grep -v '^\s*$')
+    source <(grep -v '^[[:space:]]*#' "$ENV_FILE" | grep -v '^[[:space:]]*$')
     set +o allexport
     log "Sourced $ENV_FILE"
 fi

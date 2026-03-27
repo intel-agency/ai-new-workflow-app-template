@@ -68,7 +68,13 @@ gh auth token | docker login ghcr.io -u "$(gh api user --jq .login)" --password-
 Before starting the server, export the variables so the devcontainer can read them:
 
 ```bash
-export $(grep -v '^#' .env | grep -v '^\s*$' | xargs)
+set -a; source .env; set +a
+```
+
+Or use the setup helper:
+
+```bash
+bash scripts/setup-local-env.sh
 ```
 
 ---
@@ -215,7 +221,13 @@ docker run --rm ghcr.io/intel-agency/workflow-orchestration-prebuild/devcontaine
 Source your `.env` before starting:
 
 ```bash
-export $(grep -v '^#' .env | grep -v '^\s*$' | xargs)
+set -a; source .env; set +a
+```
+
+Or use the setup helper:
+
+```bash
+bash scripts/setup-local-env.sh
 ```
 
 ### Server won't start / port conflict
@@ -224,6 +236,9 @@ Check if something else is using port 4096:
 
 ```bash
 lsof -i :4096
+# Or on systems without lsof:
+# Linux: netstat -anp | grep 4096
+# Windows: netstat -ano | findstr "4096"
 ```
 
 Override the port:

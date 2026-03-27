@@ -90,7 +90,7 @@ case "$COMMAND" in
 
     start)
         abs_workspace="$(cd "$WORKSPACE_FOLDER" && pwd)"
-        container_id="$(docker ps -aq --filter "label=devcontainer.local_folder=${abs_workspace}")"
+        container_id="$(docker ps -aq --latest --filter "label=devcontainer.local_folder=${abs_workspace}")"
         if [[ -z "$container_id" ]]; then
             echo "[devcontainer-opencode] no container found; creating via 'up'"
             devcontainer up "${shared_args[@]}"
@@ -137,7 +137,7 @@ case "$COMMAND" in
 
     status)
         abs_workspace="$(cd "$WORKSPACE_FOLDER" && pwd)"
-        container_id="$(docker ps -aq --filter "label=devcontainer.local_folder=${abs_workspace}")"
+        container_id="$(docker ps -aq --latest --filter "label=devcontainer.local_folder=${abs_workspace}")"
         echo "=== Devcontainer Status ==="
         echo "Workspace: ${abs_workspace}"
         echo ""
@@ -179,7 +179,7 @@ case "$COMMAND" in
                 fi
                 echo ""
                 echo "=== Memory ==="
-                mem="${MEMORY_FILE_PATH:-/workspaces/ai-new-workflow-app-template/.memory/memory.jsonl}"
+                mem="${MEMORY_FILE_PATH:-$PWD/.memory/memory.jsonl}"
                 if [[ -f "$mem" ]]; then
                     echo "Memory file: $mem ($(wc -l < "$mem") entries, $(wc -c < "$mem") bytes)"
                 else
@@ -198,7 +198,7 @@ case "$COMMAND" in
     stop|down)
         # Locate the container via the label devcontainer stamps with the workspace path.
         abs_workspace="$(cd "$WORKSPACE_FOLDER" && pwd)"
-        container_id="$(docker ps -aq --filter "label=devcontainer.local_folder=${abs_workspace}")"
+        container_id="$(docker ps -aq --latest --filter "label=devcontainer.local_folder=${abs_workspace}")"
         if [[ -z "$container_id" ]]; then
             echo "[devcontainer-opencode] no running container found for workspace ${abs_workspace}" >&2
             exit 1

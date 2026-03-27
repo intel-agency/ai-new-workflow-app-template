@@ -2,12 +2,6 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"path": "../../nam20485/workflow-launch2"
-		},
-		{
-			"path": "../../nam20485/agent-instructions"
 		}
 	],
 	"settings": {

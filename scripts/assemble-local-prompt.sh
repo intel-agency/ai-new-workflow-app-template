@@ -20,6 +20,7 @@ PROMPT_STRING=""
 FIXTURE_FILE=""
 
 usage() {
+    local exit_code="${1:-1}"
     cat >&2 <<'EOF'
 Usage: assemble-local-prompt.sh -p <prompt> | -f <fixture.json> [-o <output>]
 
@@ -33,7 +34,7 @@ Examples:
   bash scripts/assemble-local-prompt.sh -f test/fixtures/issues-opened.json
   bash scripts/assemble-local-prompt.sh -p "list issues" -o /tmp/my-prompt.md
 EOF
-    exit 1
+    exit "$exit_code"
 }
 
 while getopts ":p:f:o:h" opt; do
@@ -41,13 +42,18 @@ while getopts ":p:f:o:h" opt; do
         p) PROMPT_STRING="$OPTARG" ;;
         f) FIXTURE_FILE="$OPTARG" ;;
         o) OUTPUT_FILE="$OPTARG" ;;
-        h) usage ;;
+        h) usage 0 ;;
         *) usage ;;
     esac
 done
 
 if [[ -z "$PROMPT_STRING" && -z "$FIXTURE_FILE" ]]; then
     echo "ERROR: Either -p <prompt> or -f <fixture.json> is required" >&2
+    usage
+fi
+
+if [[ -n "$PROMPT_STRING" && -n "$FIXTURE_FILE" ]]; then
+    echo "ERROR: -p and -f are mutually exclusive" >&2
     usage
 fi
 
@@ -99,8 +105,6 @@ repo=$(jq -r '.repository.full_name // "local/repo"' "$FIXTURE_FILE")
 fixture_basename="$(basename "$FIXTURE_FILE" .json)"
 event_name="${fixture_basename%%-*}"
 
-event_json=$(cat "$FIXTURE_FILE")
-
 # Build the context header
 context_header="Event Name: ${event_name}
 Action: ${event_action}
@@ -125,7 +129,7 @@ template_content=$(cat "$PROMPT_TEMPLATE")
     echo "## __EVENT_DATA__"
     echo ""
     echo '```json'
-    echo "$event_json"
+    cat "$FIXTURE_FILE"
     echo '```'
 } > "$OUTPUT_FILE"
 
