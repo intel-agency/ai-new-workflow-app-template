@@ -31,7 +31,6 @@ This document provides mandatory delegation requirements that enhance the orches
 | Documentation     | `documentation-expert`                | `developer`          | If expert unavailable         |
 | Testing           | `qa-test-engineer`                    | `developer`          | If QA unavailable             |
 | Infrastructure    | `devops-engineer`                     | `cloud-infra-expert` | If cloud-specific             |
-| Security          | `security-expert`                     | `backend-developer`  | Never                         |
 | Frontend          | `frontend-developer`                  | `ux-ui-designer`     | If UI-heavy                   |
 
 ### Verification Checkpoints
@@ -89,10 +88,7 @@ Each assignment MUST be delegated to specialized agents **-OR-** broken down by 
 | `update-documentation`     | `documentation-expert`                 | `product-manager`, `developer`          | Capture decisions, runbooks, and onboarding guides.         |
 | `expand-test-suite`        | `qa-test-engineer`                     | `developer`, `backend-developer`        | Add regression, integration, and edge-case coverage.        |
 | `frontend-feature`         | `frontend-developer`                   | `ux-ui-designer`, `qa-test-engineer`    | Build UI components and validate accessibility.             |
-| `infrastructure-hardening` | `devops-engineer`                      | `cloud-infra-expert`, `security-expert` | Harden pipelines, observability, and runtime guardrails.    |
-| `security-audit`           | `security-expert`                      | `backend-developer`, `devops-engineer`  | Review threat models, secrets hygiene, and dependency risk. |
-| `data-workflow`            | `data-scientist`                       | `ml-engineer`, `database-admin`         | Design pipelines, storage strategy, and evaluation loops.   |
-| `performance-optimization` | `performance-optimizer`                | `backend-developer`, `devops-engineer`  | Profile bottlenecks and tune resource usage.                |
+| `infrastructure-hardening` | `devops-engineer`                      | `cloud-infra-expert`                    | Harden pipelines, observability, and runtime guardrails.    |
 
 ### Execution Rules
 

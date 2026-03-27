@@ -1,6 +1,7 @@
 ---
 description: Writes developer and user docs, quickstarts, and runbooks
 mode: subagent
+model: google/gemini-3.1-pro-preview
 temperature: 0.3
 tools:
   read: true

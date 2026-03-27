@@ -1,7 +1,7 @@
 ---
 description: Provides rigorous code reviews covering correctness, security, performance, and documentation
 mode: subagent
-model: zai-coding-plan/glm-5
+model: google/gemini-3.1-pro-preview
 temperature: 0.1
 tools:
   read: true

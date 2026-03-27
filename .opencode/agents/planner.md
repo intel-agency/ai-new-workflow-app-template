@@ -2,7 +2,7 @@
 description: Converts strategic goals into sequenced milestones with dependencies and acceptance criteria
 mode: all
 model: zai-coding-plan/glm-5
-temperature: 0.2
+temperature: 0.1
 tools:
   read: true
   write: true

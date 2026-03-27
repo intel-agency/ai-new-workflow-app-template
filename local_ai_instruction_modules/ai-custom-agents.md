@@ -44,24 +44,17 @@ Agent names and roles are consistent across all clients. Each client resolves ag
 
 - planner — Breaks work into tasks with acceptance criteria.
 - product-manager — Defines goals, constraints, acceptance criteria.
-- scrum-master — Facilitates cadence; removes blockers; enforces DoD.
 
 ### Specialized
 
 - cloud-infra-expert — Cloud architecture, IaC patterns, security baselines.
 - github-expert — GitHub platform features, APIs, and integrations.
 - github-ops-agent — Manages GitHub configuration, automation, and policy enforcement.
-- performance-optimizer — Profiles and enforces performance budgets.
-- security-expert — Threat modeling, secrets hygiene, dependency risk.
 - database-admin — Schema/migrations, performance, backup/restore.
-- data-scientist — Data pipelines, metrics, experiments, reproducibility.
-- ml-engineer — Model training/inference, evaluation, deployment readiness.
 - ux-ui-designer — Wireframes, flows, accessibility, design QA.
-- mobile-developer — Platform-specific builds and store readiness.
 - debugger — Repro steps, minimal failing tests, fix validation.
 - developer — Generalist for small, scoped tasks.
 - documentation-expert — Writes developer and user docs, quickstarts, and runbooks.
-- prompt-engineer — System prompts, tool routing, guardrails.
 
 ## References
 

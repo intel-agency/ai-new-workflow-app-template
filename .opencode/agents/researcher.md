@@ -1,6 +1,7 @@
 ---
 description: Gathers broad context and produces distilled briefs with citations
 mode: subagent
+model: google/gemini-3.1-pro-preview
 temperature: 0.2
 tools:
   read: true

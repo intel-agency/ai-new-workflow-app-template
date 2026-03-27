@@ -1,3 +1,24 @@
+---
+description: Retrieves and inserts guidance from the canonical agent-instructions repository; returns minimal focused responses to orchestrating agents
+mode: subagent
+temperature: 0.2
+tools:
+  read: true
+  write: true
+  edit: true
+  list: true
+  bash: false
+  grep: true
+  glob: true
+  task: false
+  todowrite: true
+  todoread: true
+  webfetch: true
+permission:
+  bash: deny
+  task: deny
+---
+
 # Agent Instructions Expert
 
 <subagent_definition>
@@ -75,6 +96,7 @@ context: "Expanding application development patterns"
 |-------|------|----------|
 | Workflow development | `ai_instruction_modules/ai-workflow-development-guide.md` | Creating/modifying workflows |
 | Workflow assignments | `ai_instruction_modules/ai-workflow-assignments.md` | Active assignment index |
+| Dynamic workflow definitions | `ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/*.md` | Specific assignment steps |
 | Assignment definitions | `ai_instruction_modules/ai-workflow-assignments/*.md` | Specific assignment steps |
 | DSL syntax | `ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/dynamic-workflow-syntax.md` | Workflow script authoring |
 
