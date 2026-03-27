@@ -1,11 +1,11 @@
 # Dynamic Workflows Index
 
 Repository: nam20485/agent-instructions
-Full repo URL: <https://github.com/nam20485/agent-instructions>
+Full repo URL: https://github.com/nam20485/agent-instructions
 Branch: main
 Directory: ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/
 
-Listed below are all of the active dynamic workflows and their paths.
+Listed beklow are all of the active dynamic workflows and their paths.
 
 Agents MUST resolve dynamic workflows from the remote canonical repository. Do not use local mirrors.
 
@@ -15,7 +15,7 @@ Agents MUST resolve dynamic workflows from the remote canonical repository. Do n
 - Branch: main
 - Directory: `ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/`
 
-## Dynamic Workflows
+## Dynamic Workflows 
 
 #### analyze-plan
 

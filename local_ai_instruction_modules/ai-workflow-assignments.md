@@ -1,11 +1,11 @@
 # Workflow Assignments Index
 
 Repository: nam20485/agent-instructions
-Full repo URL: <https://github.com/nam20485/agent-instructions>
+Full repo URL: https://github.com/nam20485/agent-instructions
 Branch: main
 Directory: ai_instruction_modules/ai-workflow-assignments/
 
-Listed below are all of the active workflow assignments and their paths.
+Listed beklow are all of the active workflow assignments and their paths.
 
 Agents MUST resolve workflow assignments (by shortId) from the remote canonical repository. Do not use local mirrors.
 
@@ -15,7 +15,7 @@ Agents MUST resolve workflow assignments (by shortId) from the remote canonical 
 - Branch: main
 - Directory: `ai_instruction_modules/ai-workflow-assignments/`
 
-## Workflow Assignments
+## Workflow Assignments 
 
 #### ai-workflow-assignment-empty-template
 
@@ -57,12 +57,20 @@ Agents MUST resolve workflow assignments (by shortId) from the remote canonical 
 - Raw URL:   [continuous-improvement](https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-workflow-assignments/continuous-improvement.md)
 - Canonical file: `ai_instruction_modules/ai-workflow-assignments/continuous-improvement.md`
 
+#### create-agents-md-file
+
+- shortId: create-agents-md-file
+
+- GitHub UI: [create-agents-md-file](https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-workflow-assignments/create-agents-md-file.md)
+- Raw URL:   [create-agents-md-file](https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-workflow-assignments/create-agents-md-file.md)
+- Canonical file: `ai_instruction_modules/ai-workflow-assignments/create-agents-md-file.md`
+
 #### create-app-from-plan-issue (unguided)
 
 - shortId: create-app-from-plan-issue (unguided)
 
-- GitHub UI: [create-app-from-plan-issue (unguided)](<https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-workflow-assignments/create-app-from-plan-issue> (unguided).md)
-- Raw URL:   [create-app-from-plan-issue (unguided)](<https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-workflow-assignments/create-app-from-plan-issue> (unguided).md)
+- GitHub UI: [create-app-from-plan-issue (unguided)](https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-workflow-assignments/create-app-from-plan-issue (unguided).md)
+- Raw URL:   [create-app-from-plan-issue (unguided)](https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-workflow-assignments/create-app-from-plan-issue (unguided).md)
 - Canonical file: `ai_instruction_modules/ai-workflow-assignments/create-app-from-plan-issue (unguided).md`
 
 #### create-app-from-plan-issue
