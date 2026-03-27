@@ -68,6 +68,24 @@
         }
       }
     },
+    "kimi-for-coding": {
+      "models": {
+        "kimi-k2-thinking": {
+          "name": "Kimi K2 Thinking",
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        },
+        "k2p5": {
+          "name": "Kimi K2.5",
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          }
+        }
+      }
+    },
     "google": {
       "options": {
         "projectId": "gemini-code-assist-490720"
