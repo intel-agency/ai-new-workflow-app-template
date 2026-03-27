@@ -228,10 +228,17 @@ TAIL_PID=$!
 # clearly distinguishes server-side subagent activity from client output.
 # We track the server log position so we only show NEW lines (not startup noise).
 SERVER_TAIL_PID=""
+# Patterns suppressed from server log streaming — these are per-token / init noise:
+#   service=bus           → one line per LLM token delta (message.part.delta/updated)
+#   service=tool.registry → tool init/teardown chatter on every session loop
+#   service=permission    → permission ruleset evaluation (very verbose JSON blobs)
+#   service=bash-tool     → bash shell initialisation line
+_SERVER_LOG_NOISE='service=bus |service=tool\.registry |service=permission |service=bash-tool '
 if [[ -f "$SERVER_LOG" ]]; then
     _server_log_start_lines=$(wc -l < "$SERVER_LOG" 2>/dev/null || echo 0)
-    # tail from current position onward, prefix each line with [server]
+    # tail from current position onward, suppress noise, prefix each line with [server]
     tail -f -n +$(( _server_log_start_lines + 1 )) "$SERVER_LOG" 2>/dev/null | \
+        grep -Ev "$_SERVER_LOG_NOISE" | \
         sed -u 's/^/[server] /' &
     SERVER_TAIL_PID=$!
     echo "Server log tailer started (pid ${SERVER_TAIL_PID}), streaming from line $(( _server_log_start_lines + 1 ))"
