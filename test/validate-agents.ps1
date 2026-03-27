@@ -31,10 +31,15 @@
 .PARAMETER FailedFile
     Path to a failed_agents.json from a prior run — only re-tests those agents.
 
+.PARAMETER DelegatorAgent
+    Primary agent used to delegate tests to subagents. Defaults to 'developer'.
+    Must be a non-subagent (mode != subagent) to avoid recursive fallback.
+
 .EXAMPLE
     pwsh test/validate-agents.ps1
     pwsh test/validate-agents.ps1 -Agent researcher
     pwsh test/validate-agents.ps1 -FailedFile test/failed_agents.json
+    pwsh test/validate-agents.ps1 -DelegatorAgent orchestrator
 #>
 param(
     [string] $AgentsDir        = (Join-Path $PSScriptRoot ".." ".opencode" "agents"),
@@ -43,7 +48,8 @@ param(
     [int]    $TimeoutSeconds   = 90,
     [string] $Agent            = "",
     [string] $FailedFile       = "",
-    [string] $FailedOutputFile = (Join-Path $PSScriptRoot "failed_agents.json")
+    [string] $FailedOutputFile = (Join-Path $PSScriptRoot "failed_agents.json"),
+    [string] $DelegatorAgent   = "developer"
 )
 
 Set-StrictMode -Version Latest
@@ -118,15 +124,19 @@ Write-Host "`nAgent Validation Plan" -ForegroundColor Cyan
 Write-Host "Repo root : $repoRoot"
 Write-Host "Agents dir: $agentsPath"
 Write-Host "Default model: $defaultModel"
-Write-Host "Timeout   : ${TimeoutSeconds}s per agent"
-Write-Host "Prompt    : `"$Prompt`"`n"
+Write-Host "Timeout   : ${TimeoutSeconds}s (2x for subagents)"
+Write-Host "Prompt    : `"$Prompt`""
+Write-Host "Delegator : $DelegatorAgent (used for mode:subagent agents)`n"
 
 $plan = @()
 foreach ($file in $agentFiles) {
     $agentName  = $file.BaseName
     $agentModel = Get-FrontmatterValue $file.FullName "model"
+    $agentMode  = Get-FrontmatterValue $file.FullName "mode"
+    $isSubagent = ($agentMode -eq "subagent")
     $resolvedModel = if ($agentModel) { $agentModel } else { "$defaultModel (default)" }
-    $plan += [PSCustomObject]@{ Agent = $agentName; Model = $resolvedModel }
+    $modeTag = if ($isSubagent) { " [subagent->via $DelegatorAgent]" } else { "" }
+    $plan += [PSCustomObject]@{ Agent = $agentName; Model = "$resolvedModel$modeTag" }
 }
 
 $plan | Format-Table -AutoSize
@@ -141,9 +151,13 @@ $failCount = 0
 foreach ($file in $agentFiles) {
     $agentName  = $file.BaseName
     $agentModel = Get-FrontmatterValue $file.FullName "model"
+    $agentMode  = Get-FrontmatterValue $file.FullName "mode"
+    $isSubagent = ($agentMode -eq "subagent")
     $resolvedModel = if ($agentModel) { $agentModel } else { $defaultModel }
 
-    Write-Header "$agentName  (model: $resolvedModel)"
+    $effectiveTimeout = if ($isSubagent) { $TimeoutSeconds * 2 } else { $TimeoutSeconds }
+    $routeNote = if ($isSubagent) { " [subagent->via $DelegatorAgent, timeout ${effectiveTimeout}s]" } else { "" }
+    Write-Header "$agentName  (model: $resolvedModel)$routeNote"
 
     $passed    = $false
     $output    = ""
@@ -151,15 +165,28 @@ foreach ($file in $agentFiles) {
     $exitCode  = -1
 
     try {
-        Write-Host "  opencode run --agent $agentName --message `"$Prompt`" ..."
+        if ($isSubagent) {
+            # Subagents cannot be invoked directly — route via a primary agent delegation.
+            # The delegator uses the task tool to spin up the subagent.
+            $delegationMsg = "You must use the task tool to invoke the '$agentName' agent with exactly this message: '$Prompt'. Do not answer yourself. Return only the agent's response verbatim."
+            Write-Host "  opencode run --agent $DelegatorAgent --message [delegate to $agentName] ..."
 
-        $job = Start-Job -ScriptBlock {
-            Set-Location $using:repoRoot
-            $out = opencode run --agent $using:agentName --message $using:Prompt 2>&1
-            [pscustomobject]@{ Output = ($out -join "`n"); ExitCode = $LASTEXITCODE }
+            $job = Start-Job -ScriptBlock {
+                Set-Location $using:repoRoot
+                $out = opencode run --agent $using:DelegatorAgent --message $using:delegationMsg 2>&1
+                [pscustomobject]@{ Output = ($out -join "`n"); ExitCode = $LASTEXITCODE }
+            }
+        } else {
+            Write-Host "  opencode run --agent $agentName --message `"$Prompt`" ..."
+
+            $job = Start-Job -ScriptBlock {
+                Set-Location $using:repoRoot
+                $out = opencode run --agent $using:agentName --message $using:Prompt 2>&1
+                [pscustomobject]@{ Output = ($out -join "`n"); ExitCode = $LASTEXITCODE }
+            }
         }
 
-        $remaining = $TimeoutSeconds
+        $remaining = $effectiveTimeout
         $completed = $null
         while ($remaining -ge 0) {
             Write-Host "`r  [$remaining s remaining]  " -NoNewline
@@ -172,7 +199,7 @@ foreach ($file in $agentFiles) {
         if (-not $completed) {
             Stop-Job  $job -ErrorAction SilentlyContinue
             Remove-Job $job -Force -ErrorAction SilentlyContinue
-            throw "Timed out after ${TimeoutSeconds}s"
+            throw "Timed out after ${effectiveTimeout}s"
         }
 
         $result   = Receive-Job $job
@@ -190,6 +217,10 @@ foreach ($file in $agentFiles) {
         }
         if ([string]::IsNullOrWhiteSpace($output)) {
             throw "Empty response"
+        }
+        # For subagents invoked via delegation, detect if opencode fell back to default instead of delegating
+        if ($isSubagent -and $output -match 'is a subagent, not a primary agent') {
+            throw "Delegation failed: '$DelegatorAgent' did not use task tool — subagent fell back to default"
         }
         # Detect common auth/quota/error patterns
         if ($output -match 'error|Error|exception|401|403|429|quota|Payment Required|Unauthorized|RESOURCE_EXHAUSTED|AI_APICallError') {
@@ -213,6 +244,7 @@ foreach ($file in $agentFiles) {
     $results.Add(@{
         agent          = $agentName
         model          = $resolvedModel
+        mode           = if ($isSubagent) { "subagent" } else { "primary" }
         model_explicit = (-not [string]::IsNullOrEmpty($agentModel))
         passed         = $passed
         exit_code      = $exitCode
@@ -228,10 +260,11 @@ Write-Host "RESULTS: $passCount passed, $failCount failed out of $($results.Coun
 Write-Host ("=" * 60) -ForegroundColor Cyan
 
 $results | ForEach-Object {
-    $icon   = if ($_.passed) { "✓" } else { "✗" }
-    $color  = if ($_.passed) { "Green" } else { "Red" }
-    $note   = if ($_.model_explicit) { "" } else { " [default]" }
-    Write-Host "  $icon  $($_.agent.PadRight(30)) $($_.model)$note" -ForegroundColor $color
+    $icon     = if ($_.passed) { "✓" } else { "✗" }
+    $color    = if ($_.passed) { "Green" } else { "Red" }
+    $defNote  = if ($_.model_explicit) { "" } else { " [default]" }
+    $modeNote = if ($_.mode -eq "subagent") { " [subagent]" } else { "" }
+    Write-Host "  $icon  $($_.agent.PadRight(30)) $($_.model)$defNote$modeNote" -ForegroundColor $color
 }
 
 # ── write failed_agents.json ──────────────────────────────────────────────────
