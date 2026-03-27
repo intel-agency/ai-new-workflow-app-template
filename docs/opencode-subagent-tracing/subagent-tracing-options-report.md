@@ -64,6 +64,8 @@ OpenCode's subagent architecture deliberately isolates child sessions from paren
 
 ### Option E — Plugin-Based Tool Lifecycle Hooks
 
+> **⚠️ UNVERIFIED**: Go source code inspection (2026-03-27) found no `tool.execute.before`/`tool.execute.after` hook points or plugin lifecycle API in the OpenCode/Crush codebase. This option may be hallucinated. The Go agent uses `fantasy.NewParallelAgentTool` internally but does not expose plugin hooks to external TypeScript code. Treat this option as speculative until verified against a future release.
+
 | Attribute | Detail |
 |---|---|
 | **Mechanism** | Create a TypeScript plugin at `.opencode/plugins/tracer/index.ts` (or global `~/.config/opencode/plugins/`). Hook `tool.execute.before` and `tool.execute.after` to intercept every tool call with full args and output |
@@ -77,6 +79,8 @@ OpenCode's subagent architecture deliberately isolates child sessions from paren
 **Known Bug**: In some OpenCode versions (~1.0.220), `client.app.log()` traces don't propagate to `--print-logs` terminal output but *are* written to the log files. Always check files, not just terminal.
 
 ### Option F — OpenTelemetry (OTEL) Distributed Tracing
+
+> **⚠️ UNVERIFIED**: Go source code inspection (2026-03-27) found no OpenTelemetry integration, `experimental.openTelemetry` config key, or `@opentelemetry/sdk-node` usage in the OpenCode/Crush codebase. The `@devtheops/opencode-plugin-otel` package was not found in any registry. This option may be entirely hallucinated. Treat as speculative.
 
 | Attribute | Detail |
 |---|---|
@@ -251,20 +255,31 @@ OpenCode's subagent architecture deliberately isolates child sessions from paren
 
 ## 7. Implementation Status
 
-> Completed 2026-03-21. Options B-lite + C + D implemented with zero impact on main workflow output.
+### Phase 1 — Post-mortem artifact collection (completed 2026-03-21)
 
-### What was implemented
+> Options B-lite + C + D implemented with zero impact on main workflow output.
 
 | Change | File | Description |
 |---|---|---|
-| Server-side DEBUG logging | `scripts/start-opencode-server.sh` | `opencode serve` now starts with `--log-level DEBUG` (configurable via `OPENCODE_SERVER_LOG_LEVEL` env var). Writes to `/tmp/opencode-serve.log` only — client stdout stays at INFO. |
+| Server-side DEBUG logging | `scripts/start-opencode-server.sh` | `opencode serve` starts with `--log-level DEBUG` (configurable via `OPENCODE_SERVER_LOG_LEVEL` env var). Writes to `/tmp/opencode-serve.log` only — client stdout stays at INFO. |
 | Credential scrubbing in extractor | `scripts/trace-extract.py` | Imports `scrub_secrets()` from `WorkItemModel.py`. Scrubbing is on by default; disable with `--no-scrub`. |
-| Artifact collection post-step | `.github/workflows/orchestrator-agent.yml` | New `if: always()` step collects OpenCode rotating logs + server log + runs `trace-extract.py --scrub` to produce `subagent-traces.txt`. |
+| Artifact collection post-step | `.github/workflows/orchestrator-agent.yml` | `if: always()` step collects OpenCode rotating logs + server log + runs `trace-extract.py --scrub` to produce `subagent-traces.txt`. |
 | Artifact upload post-step | `.github/workflows/orchestrator-agent.yml` | Uploads the bundle as `opencode-traces` artifact with 14-day retention via `actions/upload-artifact@v4`. |
 
-### What was NOT changed (by design)
+### Phase 2 — Live subagent trace streaming (completed 2026-03-28, commit `22f0b94`)
 
-- **Client log level**: `run_opencode_prompt.sh` still runs at `INFO` with `--print-logs`. No noise added to the main workflow output.
+> Implements Option A-enhanced + Option 3 (watchdog enhancement from §8). Subagent activity now streams to CI stdout in real time.
+
+| Change | File | Description |
+|---|---|---|
+| `--print-logs` on server | `scripts/start-opencode-server.sh` | Added `--print-logs` flag to `opencode serve` so structured log entries (tool calls, session events, agent activity) are emitted to stderr and captured in the server log file. |
+| Live server log tailer | `run_opencode_prompt.sh` | New `_stream_server_subagent_log()` function tails the server log filtered for subagent-relevant entries (`tool`, `session`, `agent`, `Task`, `error`, `warn`, `spawn`, `delegat`) and streams them to CI stdout with `[server]` prefix. Starts alongside the client tail and is killed on exit. |
+| Enhanced watchdog messages | `run_opencode_prompt.sh` | When the watchdog detects "subagent likely running" (server I/O active but client idle), it now includes the last 3 lines of server log activity, showing **what** the subagent is doing instead of just that it exists. |
+| Always dump server logs | `.github/workflows/orchestrator-agent.yml` | "Dump server-side logs" step changed from `if: always() && vars.DEBUG_ORCHESTRATOR == 'true'` to `if: always()` — subagent traces visible in every CI run regardless of debug mode. |
+
+### What is NOT changed (by design)
+
+- **Client log level**: `run_opencode_prompt.sh` still runs at `INFO` with `--print-logs`. No noise added to the main client output stream.
 - **`--format json`**: Only activated when `DEBUG_ORCHESTRATOR=true` (existing behavior preserved).
 - **Log grouping around execution**: Not added — the orchestrator step already has clean, readable output. Wrapping it in `::group::` would hide the useful real-time output by default.
 - **Artifact upload condition**: Set to `always()` not just `failure()`, so traces are available even for successful runs (useful for cost analysis and subagent behavior auditing).
@@ -277,12 +292,30 @@ OpenCode's subagent architecture deliberately isolates child sessions from paren
 | `opencode-traces/opencode-serve.log` | Full server-side log at DEBUG level | Every run |
 | `opencode-traces/*.log` | OpenCode rotating session logs from `~/.local/share/opencode/log/` | Every run |
 
+### Live CI output (new in Phase 2)
+
+During execution, the CI job log now shows interleaved streams:
+
+```
+[client] • Execute create-workflow-plan assignment               ← client dispatch marker
+[server] {"level":"DEBUG","tool":"Task","agent":"Planner",...}   ← server log entry (filtered)
+[watchdog] client idle 82s, server active — subagent likely running
+[watchdog] recent server activity:                               ← watchdog shows WHAT is happening
+  {"level":"DEBUG","msg":"tool_call","tool":"readFile",...}
+  {"level":"DEBUG","msg":"tool_result","tool":"readFile",...}
+  {"level":"DEBUG","msg":"tool_call","tool":"writeFile",...}
+[client] ✓ Execute create-workflow-plan assignment               ← client completion marker
+```
+
 ### Gaps closed
 
 - ~~`trace-extract.py` had no credential scrubbing~~ → Now imports and applies `scrub_secrets()` by default
 - ~~`WorkItemModel.py` scrubber was not integrated~~ → Now consumed by `trace-extract.py` via sibling import
 - ~~Server-side logs at INFO missed subagent session details~~ → Server now runs at DEBUG, capturing Task tool dispatches, child session IDs, and full tool execution traces
 - ~~No artifact collection~~ → Logs + distilled traces uploaded on every run with 14-day retention
+- ~~No live subagent visibility during execution~~ → Server log tailer streams filtered entries to CI stdout in real time
+- ~~Watchdog said "subagent running" but not WHAT it was doing~~ → Watchdog now shows last 3 lines of server activity
+- ~~Server log dump required `DEBUG_ORCHESTRATOR=true`~~ → Now runs on every CI execution
 
 ---
 
@@ -321,7 +354,7 @@ The watchdog heartbeats fill the silent gaps with server I/O activity confirmati
 
 ### Recommendation
 
-**Option 3 (watchdog enhancement)** is the only approach that fits the constraints:
+**Option 3 (watchdog enhancement)** is the only approach that fits the constraints. **Implemented in commit `22f0b94` (Phase 2)**.
 - Adds 0-1 lines per 30s watchdog cycle (same cadence as existing heartbeats)
 - Requires ~5 lines of bash in the watchdog loop in `run_opencode_prompt.sh`
 - Blends with existing `[watchdog]` output format
