@@ -189,3 +189,30 @@ tail -f "$OUTPUT_LOG" | sed -u \
 - **FIFO safety**: If cleanup issues arise (orphaned `tail -f`), adopt the same FIFO pattern from the server log tailer (lines ~230-245). This is a known pattern in this codebase.
 - **Prefix evolution**: If future needs demand agent-name-in-prefix, Option C can be pursued later with better knowledge of whether opencode's ANSI output format is stable.
 - **Combined with trace filtering**: This prefix change pairs well with Tier 1 noise removal from the filtering analysis — together they make the CI log significantly more scannable.
+
+
+## **REMARKS**
+
+Implement:
+Plan 1: 
+- Phases 1-3
+
+Notes: Leave [watchdog] in, OR replace with some kind of progress heartbeat (maybe summarize the line so its shorter/half-length- then its blends in to the rest of the log instead of obscuring it) Oh wait- nm the [subagent] prefixes will provide progress/not freezing feedback)
+Q:
+- Will it get rid of these?:
+`2026-03-28T06:34:32.9520018Z INFO  2026-03-28T06:28:56 +0ms service=bus type=message.part.delta publishing`
+- If we gate/rm the [watchdog] lines, will the correspondiong subagent delegate output lines provide process-live feedback? If so do it- otherwise we need some kind of feedback that something is happening, and personally I like seeing how long its been in delegation for 
+
+Plan 2:
+- Option A
+
+Notes:
+- add visual distinction to the agent name suffix, i.e. `(General agent)`) Note: agent type is capitalized, `agent` is not capitalized
+- after Option A is proven in a few successful runs, I want Option B implemented.
+
+Q:
+- adopting FIFO pattern for clenaup issues (i.e. `tail -f`)- what is the issue exactly? Is it when the process didnt die and the workflow run hung/didnt stop when finished? If so- implement matching pattern here now. We alraeady saw a ciritical issue from, this problem, so it wouldnt make sense to assume it WONT happen when needing to guess.
+
+Defer:
+Plan 1- Ph4
+Plan 2 - Opt B
