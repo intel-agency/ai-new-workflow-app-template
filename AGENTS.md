@@ -162,6 +162,7 @@ scope: repository
     <rule>`.opencode/` is checked out by `actions/checkout`; do not COPY it in the Dockerfile.</rule>
     <rule>The Dockerfile and prebuild pipeline live in the external `intel-agency/workflow-orchestration-prebuild` repo. Consumer devcontainer uses `"image:"` pointing to `ghcr.io/intel-agency/workflow-orchestration-prebuild/devcontainer:main-latest` — no local build in this repo.</rule>
     <rule>Repository labels are defined in `.github/.labels.json`. Use `scripts/import-labels.ps1` to sync them to a repo instance. When adding new labels, add them to this file — it is the single source of truth for the label set.</rule>
+    <rule>Implementation approval protocol: before implementing any non-trivial change, verify that explicit approval was given for that specific item AND that no significant state or circumstances have changed since approval was given. If approval was never given, or was invalidated by changed circumstances, stop and ask before acting. When in doubt — ask, don't act.</rule>
   </coding_conventions>
 
   <!-- ═══════════════════════════════════════════════════════════════════
