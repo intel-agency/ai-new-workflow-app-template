@@ -15,7 +15,7 @@ tools:
   todoread: true
   webfetch: true
 permission:
-  bash: ask
+  bash: allow
 ---
 
 You are a database administrator specializing in data system design, optimization, and governance.

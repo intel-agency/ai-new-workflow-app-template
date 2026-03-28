@@ -15,7 +15,7 @@ tools:
   todoread: true
   webfetch: true
 permission:
-  bash: ask
+  bash: allow
 ---
 
 You are a cloud infrastructure expert specializing in architecture design and infrastructure as code.

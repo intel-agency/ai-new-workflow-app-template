@@ -17,7 +17,7 @@ tools:
   webfetch: true
 permission:
   edit: deny
-  bash: ask
+  bash: allow
 ---
 
 You are a code reviewer focused on ensuring quality, security, and maintainability standards.
