@@ -10,6 +10,8 @@ The child tremplates can just reference and use the prebuild package without wor
 
 **See also:** [F1-orchestration-migration-options.md](F1-orchestration-migration-options.md) — Options analysis for moving agent files, AGENTS.md, prompt, and orchestration config into the prebuild repo (Options A/B/C, AGENTS.md split strategy, recommendation).
 
+**Full Dev Plan:** [F1-feature-full-dev-plan.md](F1-feature-full-dev-plan.md) — Detailed development plan incorporating all remarks, migration strategy (Option C hybrid), execution phases, file migration plan, risks, and success criteria.
+
 **REMARKS:** All logic related to the orchestration process, including the opencode server, orchestrator agent, prompt assembly, and related workflows should be moved to the prebuild container. The template repo should only contain application-level code and configuration that references the prebuild container for orchestration functionality. This is because the opencode server orchestration agent/logic will run in its opwn service which run sindependetly and can be invoked e.g. by GH app event-triggered webhooks
 
 1. The issues raised below about how to run the orchestration inside the template clone repose can be resolved by entering and running the orchestration-agent.yml workflow inside of the devcontainer. Once inside the running devcontainer, all the calls can be made similar to before.
