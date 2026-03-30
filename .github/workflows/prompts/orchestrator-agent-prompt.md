@@ -127,6 +127,7 @@ These are reusable procedures referenced by the clause logic below. When a claus
           - if create-epic-v2 succeeds:
             - postStatusUpdate("✅ Epic created for Phase " + $next.phase + " Line Item " + $next.line_item + ". Applying `orchestration:epic-ready` label.")
             - apply label "orchestration:epic-ready" to the newly-created epic issue.
+            - **CRITICAL: verify the `orchestration:epic-ready` label was applied to the epic issue. If not, apply it now. The pipeline CANNOT advance without this label.**
           - else → postStatusUpdate("❌ `create-epic-v2` failed for Phase " + $next.phase + " Line Item " + $next.line_item + ". See workflow run logs."), skip to ##Final.
         }
 
@@ -156,6 +157,7 @@ case (type = issues &&
           - if create-epic-v2 succeeds:
             - postStatusUpdate("✅ Next epic created for Phase " + $next.phase + " Line Item " + $next.line_item + ". Applying `orchestration:epic-ready` and closing this epic.")
             - apply label "orchestration:epic-ready" to the newly-created epic issue.
+            - **CRITICAL: verify the `orchestration:epic-ready` label was applied to the epic issue. If not, apply it now. The pipeline CANNOT advance without this label.**
             - close the current epic issue with a short comment indicating it is complete and referencing the newly-created epic issue.
           - else → postStatusUpdate("❌ `create-epic-v2` failed for Phase " + $next.phase + " Line Item " + $next.line_item + ". See workflow run logs."), skip to ##Final.           
         }
@@ -183,6 +185,7 @@ case (type = issues &&
           - if implement-epic succeeds:
             - postStatusUpdate("✅ Step 1/4: `implement-epic` completed for: " + $created_epic + ". Applying `orchestration:epic-implemented` label.")
             - apply label "orchestration:epic-implemented" to the newly-created epic issue.
+            - **CRITICAL: verify the `orchestration:epic-implemented` label was applied to the epic issue. If not, apply it now. The pipeline CANNOT advance without this label.**
           - else → postStatusUpdate("❌ Step 1/4 `implement-epic` failed for: " + $created_epic + ". See workflow run logs."), skip to ##Final.      
         }
 
@@ -217,6 +220,7 @@ case (type = issues &&
           - if review-epic-prs succeeds:
             - postStatusUpdate("✅ Step 2/4: `review-epic-prs` completed for: " + $implemented_epic + ". Applying `orchestration:epic-reviewed` label.")
             - apply label "orchestration:epic-reviewed" to the newly-created epic issue.
+            - **CRITICAL: verify the `orchestration:epic-reviewed` label was applied to the epic issue. If not, apply it now. The pipeline CANNOT advance without this label.**
           - else → postStatusUpdate("❌ Step 2/4 `review-epic-prs` failed for: " + $implemented_epic + ". See workflow run logs."), skip to ##Final.
         }
 case (type = issues &&
@@ -260,6 +264,7 @@ case (type = issues &&
           
           - postStatusUpdate("✅ Steps 3-4 complete for: " + $implemented_epic + ". Applying `orchestration:epic-complete` label.")
           - apply label "orchestration:epic-complete" to the newly-created epic issue.
+          - **CRITICAL: verify the `orchestration:epic-complete` label was applied to the epic issue. If not, apply it now. The pipeline CANNOT advance to the next epic without this label.**
         }
 
 case (type = issues &&

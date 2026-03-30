@@ -47,6 +47,15 @@ SHA: abc123def456"
     echo '```json'
     cat "$fixture_file"
     echo '```'
+    echo ""
+    echo "--- prompt repeated verbatim to aid comprehension... ---"
+    echo ""
+    sed '/{{__EVENT_DATA__}}/,$ d' "$PROMPT_TEMPLATE"
+    echo "$EVENT_BLOCK"
+    echo ""
+    echo '```json'
+    cat "$fixture_file"
+    echo '```'
   } > "$output_file"
 }
 
@@ -102,9 +111,9 @@ for fixture in "$FIXTURES_DIR"/*.json; do
   check_result "json code block present" \
     "grep -q '^\`\`\`json' '$output_file'"
 
-  # Extract JSON from the assembled prompt and validate with jq
+  # Extract JSON from the first code block in the assembled prompt and validate with jq
   json_tmp="/tmp/test-extracted-${basename%.json}.json"
-  sed -n '/^```json$/,/^```$/p' "$output_file" | sed '1d;$d' > "$json_tmp"
+  sed -n '/^```json$/,/^```$/{p;/^```$/q}' "$output_file" | sed '1d;$d' > "$json_tmp"
   check_result "json is valid" \
     "jq empty '$json_tmp' 2>/dev/null"
   rm -f "$json_tmp"
