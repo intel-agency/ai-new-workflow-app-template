@@ -37,23 +37,6 @@ After all review comments are resolved, please:
 
 When finished, fetch the list again to make sure that there are 0 unresolved comments left. If not, resolve the remaining ones.
 
---- prompt repeated verbatim to aid comprehension... ---
-
-In PR #$ARGUMENTS, address **ALL** review comments.
-
-**ALL REVIEW COMMENTS MUST BE ADDRESSED.**
-
-Resolving a review comment means:
-
-1. analyzing the comment
-    a. if functionality is working as designed or otherwise no code change is needed, skip to step 4. and explain why no code change is needed.
-2. making necessary code changes to address the comment
-3. committing/pushing the changes
-4. replying to the comment with an explanation of the changes made
-5. using the Graphql API to resolve the review comment thread.
-
-**DO NOT SKIP ANY STEPS.**
-
 <!--
 copilot-source:
   file: resolve-pr-comments.prompt.md

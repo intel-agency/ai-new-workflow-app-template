@@ -66,19 +66,7 @@ grep -n '{{__EVENT_DATA__}}' "$PROMPT_TEMPLATE" || echo "  WARNING: no {{__EVENT
 echo "::endgroup::"
 
 # Replace {{__EVENT_DATA__}} injection point with structured context + full event JSON.
-# The prompt is emitted twice, separated by a comprehension marker, to increase the
-# probability that the model follows all instructions (clause logic, label applications,
-# memory writes). The repeated content is identical — no action directives are added.
 {
-  sed '/{{__EVENT_DATA__}}/,$ d' "$PROMPT_TEMPLATE"
-  echo "$EVENT_BLOCK"
-  echo ""
-  printf '```json\n'
-  echo "$EVENT_JSON"
-  printf '```\n'
-  echo ""
-  echo "--- prompt repeated verbatim to aid comprehension... ---"
-  echo ""
   sed '/{{__EVENT_DATA__}}/,$ d' "$PROMPT_TEMPLATE"
   echo "$EVENT_BLOCK"
   echo ""
@@ -104,7 +92,6 @@ echo "  Final section:     $(grep -c '## Final'                   "$ASSEMBLED_PR
 echo "  Event Name line:   $(grep -c 'Event Name:'               "$ASSEMBLED_PROMPT" || echo 0)"
 printf '  JSON code block:   %s\n' "$(grep -c '^\`\`\`json' "$ASSEMBLED_PROMPT" || echo 0)"
 echo "  Injection leftover:$(grep -c '{{__EVENT_DATA__}}'        "$ASSEMBLED_PROMPT" || echo 0)"
-echo "  Repeat marker:     $(grep -c 'prompt repeated verbatim'  "$ASSEMBLED_PROMPT" || echo 0)"
 echo "::endgroup::"
 
 echo "ORCHESTRATOR_PROMPT_PATH=$ASSEMBLED_PROMPT" >> "$GITHUB_ENV"

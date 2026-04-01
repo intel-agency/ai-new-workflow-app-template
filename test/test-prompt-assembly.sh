@@ -47,15 +47,6 @@ SHA: abc123def456"
     echo '```json'
     cat "$fixture_file"
     echo '```'
-    echo ""
-    echo "--- prompt repeated verbatim to aid comprehension... ---"
-    echo ""
-    sed '/{{__EVENT_DATA__}}/,$ d' "$PROMPT_TEMPLATE"
-    echo "$EVENT_BLOCK"
-    echo ""
-    echo '```json'
-    cat "$fixture_file"
-    echo '```'
   } > "$output_file"
 }
 

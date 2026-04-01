@@ -208,12 +208,6 @@ case (type = issues &&
           ## Step 2: Review, approve, and merge all PRs for this epic
           ## This step handles: CI verification & remediation, code review delegation,
           ## auto-reviewer wait, PR comment resolution, and merge execution.
-          ##
-          ## NOTE: The initial `project-setup` dynamic workflow creates and merges a bootstrap PR.
-          ## When this step runs for the first epic (typically 1.1 — bootstrap/repo setup), a
-          ## merged PR for that work may already exist. Before invoking `review-epic-prs`, check
-          ## for an already-merged PR covering this epic's work. If one exists, skip the review
-          ## and proceed directly to applying the success label.
           - postStatusUpdate("🤖 Step 2/4: Starting `review-epic-prs` for epic: " + $implemented_epic)
           - /orchestrate-dynamic-workflow
                $workflow_name = review-epic-prs { $epic = $implemented_epic }

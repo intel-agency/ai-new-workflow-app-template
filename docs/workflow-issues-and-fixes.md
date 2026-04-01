@@ -36,6 +36,8 @@
 | 20 | Agent incorrectly assumes project is .NET-based | **P2 – Medium** | `create-project-structure` dynamic workflow | Workflow Definition | Complete |
 | 21 | Orchestrator idle-kill exits code 0, masking failures; no SIGKILL escalation | **P1 – Critical** | `scripts/devcontainer-opencode.sh` | Watchdog / CI | Complete |
 | 22 | Watchdog race condition — premature idle-kill during active subagent work | **P1 – Critical** | `scripts/devcontainer-opencode.sh` | Watchdog | Complete |
+| 23 | Bootstrap PR NOTE clause causes model confusion and stall at epic review stage | **P1 – Critical** | `orchestrator-agent-prompt.md` L212-216 | Orchestrator Prompt | Open |
+| 24 | ZhipuAI GLM-5 API instability — repeated HTTP 500 during subagent execution | **P1 – Critical** | External (api.z.ai) | Model Provider | Open |
 
 ---
 
@@ -396,6 +398,78 @@ Leave not started — this isn't needed yet.
 Per Codex review: Console script entry points must be synchronous functions. The entry point was pointing to an async function.
 
 **Recommended fix:** Create a `run_main()` synchronous wrapper that calls `asyncio.run(main())` and point the entry point there.
+
+---
+
+### Issue 23: Bootstrap PR NOTE clause causes model confusion at epic review stage
+
+**Status:** Open
+
+**Forensic Source:** `intel-agency/workflow-orchestration-queue-india87` — workflow run [23815130143](https://github.com/intel-agency/workflow-orchestration-queue-india87/actions/runs/23815130143) (27m58s, reported "succeeded")
+
+**Regression Commit:** `d4b5f28` — "docs: add note to skip PR review for already-merged bootstrap PRs in epic workflow" (2026-03-29)
+
+**Location:** `.github/workflows/prompts/orchestrator-agent-prompt.md` lines 212-216
+
+**Description:**
+A 6-line NOTE was added to the `orchestration:epic-implemented` clause advising the model to check for already-merged bootstrap PRs before invoking `review-epic-prs`. In india87, the model reads this NOTE and enters a prolonged deliberation loop:
+
+1. **19:20:06** — Sequential thinking finalizes plan: check for merged PRs, then decide
+2. **19:20:36** — Delegates to github-expert, which correctly finds 0 merged PRs and 1 open PR (#4)
+3. **19:21:23** — Model reads the NOTE and deliberates: "This is Phase 0, Task 0.1 - the bootstrap task. However... no merged PRs... But wait - this is a template repo... The work for Phase 0 was likely done as part of the template creation process itself, not through a PR... maybe the right approach is to check if there's evidence the work was completed..."
+4. **19:22:00+** — Instead of invoking `review-epic-prs`, the model generates **400+ lines of rambling pseudo-code** that never executes actual tool calls
+5. **19:25:39** — Model outputs `gh issue edit 3 --add-label "orchestration:epic-reviewed"` as **text** — not as a tool call. Never executed.
+6. **19:39:28** — Output degrades into Chinese characters (GLM base language leaking through)
+
+**Compounding factors:**
+- ZhipuAI GLM-5 API returned HTTP 500 errors 3 times during this run (error code 1234, "Network error" from api.z.ai), at 19:22:00, 19:22:33, and 19:23:08. Each cost ~31s of execution time.
+- After API recovery, the model's output quality degrades significantly, producing rambling text instead of tool calls.
+- The workflow run reports exit code 0 ("succeeded") due to the exit-code-masking issue (P21), hiding the fact that no work was completed.
+
+**Impact:** PR #4 remains OPEN and NOT MERGED. Issue #3 never receives the `orchestration:epic-reviewed` label. The 4-step epic pipeline is stuck — no forward progress possible.
+
+**Evidence from india87 run logs (run 23815130143):**
+- Issue #3 comment at 19:24:03: "Step 2/4: Starting review-epic-prs" — but review never actually executed
+- PR #4 has a single external comment from chatgpt-codex-connector[bot]: "You have reached your Codex usage limits for code reviews" — irrelevant to the failure
+- Only 2 commits exist on main (initial + seed) — no epic code was ever merged
+
+**Why this is a regression:** Before commit `d4b5f28`, the model would simply invoke `review-epic-prs` for any open PR without deliberating about bootstrap edge cases. The NOTE created a decision fork that GLM-5 cannot reliably navigate, especially under API instability.
+
+**Proposed fix:**
+
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **A (Recommended)** | Remove the 6-line NOTE entirely (revert `d4b5f28`). The model already checks `gh pr list --state merged` naturally. | Eliminates deliberation loop; simplest fix; restores known-working behavior | Loses the explicit skip-if-merged guidance |
+| B | Replace 6-line NOTE with single-line directive: `## If a merged PR already covers this epic, skip review-epic-prs and apply the success label.` | Retains guidance without verbose deliberation trigger | Still a decision fork; may cause similar issues |
+| C | Move the merged-PR check into the `/orchestrate-dynamic-workflow` command itself rather than the orchestrator prompt | Keeps prompt simple; pushes logic to the workflow | Requires changes to remote workflow assignment |
+
+---
+
+### Issue 24: ZhipuAI GLM-5 API instability — repeated HTTP 500s during subagent execution
+
+**Status:** Open (external dependency)
+
+**Forensic Source:** `intel-agency/workflow-orchestration-queue-india87` — workflow run [23815130143](https://github.com/intel-agency/workflow-orchestration-queue-india87/actions/runs/23815130143)
+
+**Location:** External — ZhipuAI API (`api.z.ai`)
+
+**Description:**
+During the india87 review-epic-prs run, the github-expert subagent received 3 separate HTTP 500 errors from `api.z.ai`, each with error code 1234 ("Network error, please contact customer service"). The errors occurred at:
+- 19:22:00 (+32.3s API timeout)
+- 19:22:33 (+31.3s API timeout)
+- 19:23:08 (+31.0s API timeout)
+
+After each recovery, the model's output quality degrades: responses become increasingly incoherent, tool calls are replaced by textual pseudo-code that never executes, and eventually the output includes Chinese characters from the GLM base model's training language.
+
+**Impact:** The github-expert subagent burned ~27 minutes of execution time without completing any actual work. The PR was never reviewed, never merged, and the label was never applied.
+
+**Mitigation options:**
+
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **A** | Configure opencode model fallback chain (GLM-5 → Kimi K2 → GPT-5.4) | Automatic recovery from provider outages | Requires opencode support for fallback; models may behave differently |
+| B | Add retry-with-backoff logic in `run_opencode_prompt.sh` at the workflow level | Simple to implement; provider-agnostic | Only retries the full run, not individual API calls |
+| C | Monitor ZhipuAI API health pre-flight; skip run if API is degraded | Avoids wasting runner time on doomed runs | Requires health-check endpoint; adds latency |
 
 ---
 
