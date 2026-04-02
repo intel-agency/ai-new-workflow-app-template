@@ -105,11 +105,14 @@ foreach ($varName in $requiredVars) {
 
 $absWorkspace = (Resolve-Path -LiteralPath $WorkspaceFolder).Path
 $containerId  = docker ps -q --filter "label=devcontainer.local_folder=$absWorkspace" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "docker ps failed while locating the devcontainer for '$absWorkspace'"
+}
 
 if (-not $containerId) {
     Write-Error (
         "No running devcontainer found for workspace '$absWorkspace'.`n" +
-        "Start it first: bash scripts/devcontainer-opencode.sh up"
+        "Start it first: ./scripts/devcontainer-opencode.ps1 up"
     )
 }
 
@@ -158,3 +161,7 @@ Write-Host "[prompt-direct] prompt: $($PromptString.Length) chars"
 Write-Host '---'
 
 devcontainer @dcArgs
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "devcontainer exec failed with exit code $LASTEXITCODE"
+    exit $LASTEXITCODE
+}

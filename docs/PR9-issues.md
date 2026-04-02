@@ -1,5 +1,37 @@
 # PR #9 Review Comment Fix Plan
 
+## Current Status Summary
+
+Detailed execution plan: [`docs/PR9-issues-plan.md`](./PR9-issues-plan.md)
+
+Validation status on current branch:
+
+- `pwsh -NoProfile -File .\test\run-pester-tests.ps1` ✅ passed (`20/20`)
+- `pwsh -NoProfile -File .\scripts\validate.ps1 -Test` ✅ passed
+- Addressed review comments received follow-up replies; all 46 PR review threads were resolved
+
+## Outcome Summary
+
+| Area | Status | Summary |
+|---|---|---|
+| `scripts/devcontainer-opencode.ps1` | Fixed | Switched `start` and `prompt` paths from bash scripts to PowerShell scripts and corrected the `run_opencode_prompt.ps1` parameter names |
+| `scripts/assemble-orchestrator-prompt.ps1` | Fixed | Corrected marker handling, fixed the `Select-String -SimpleMatch` bug, and now fail fast when `EVENT_JSON` is missing |
+| `scripts/collect-trace-artifacts.ps1` | Fixed | Added explicit native-command exit handling and replaced the binary tar pipeline with temp-file extraction |
+| `scripts/prompt-direct.ps1` | Fixed | Error guidance now points to the PowerShell workflow; Docker/devcontainer failures now propagate correctly |
+| `scripts/start-opencode-server.ps1` | Fixed | Uses `GetTempPath()` defaults, treats non-2xx HTTP responses as reachable, detaches the Linux server process via `setsid` with combined log output, and now documents the non-Linux stderr split explicitly in-code |
+| `run_opencode_prompt.ps1` | Fixed | Declares Linux/devcontainer-only scope, uses temp-path defaults, redacts credential-bearing debug output, and wires `-PrintLogs` so it is no longer misleading |
+| `docs/code-guidelines.md` | Fixed | Removed the placeholder line and corrected the typo/grammar issues called out in review |
+| `docs/pwsh-scripts.md` | Partially fixed | Updated the cross-platform-path and `-DryRun` wording; no extra change was made for the old `validate.yml` comment because that review note is outdated relative to the current branch state |
+| `AGENTS.md` | Fixed | Corrected the typos noted in review |
+| `.copilot/mcp-config.json` | Fixed | Removed introduced trailing whitespace |
+
+## Deferred / No-op Items
+
+| Item | Status | Why |
+|---|---|---|
+| `docs/pwsh-scripts.md` comment claiming `validate.yml` mismatch | No additional change | The review note is now stale relative to the branch contents; the current branch already contains the workflow updates referenced by the docs |
+| `docs/code-guidelines.md` duplication vs `AGENTS.md` | Accepted for now | The immediate clarity issues were the typos and placeholder text. Keeping the doc avoids extra churn while still making it readable |
+
 **PR:** feat: add PowerShell cross-platform equivalents for all shell scripts  
 **Branch:** `feature/pwsh-cross-platform-scripts`  
 **Reviewers:** augmentcode, copilot-pull-request-reviewer, gemini-code-assist
@@ -35,6 +67,7 @@ The `Invoke-Prompt` function has two defects:
 
 **Root Cause:**  
 Lines in `Invoke-Prompt` that build `$execArgs`:
+
 ```powershell
 # BUG 1: array embedding
 $execArgs = @('exec') + $sharedArgs + @(
@@ -68,6 +101,7 @@ The PowerShell version uses `Start-Process` without an equivalent detach mechani
 Additionally, the bash version appends both stdout and stderr to a **single log file**. The PS1 version redirects stderr to a separate `*.stderr` file, breaking the assumption of downstream log-tailers that read one file.
 
 **Root Cause:**  
+
 ```powershell
 $proc = Start-Process -FilePath 'opencode' `
     -ArgumentList @('serve', '--hostname', $Hostname, ...) `
@@ -90,6 +124,7 @@ $proc = Start-Process -FilePath 'opencode' `
 **Reviewers:** augmentcode (medium), copilot-pull-request-reviewer (medium), gemini-code-assist (high)
 
 **Analysis:**  
+
 ```powershell
 if ($markerIndex -le 0) {
     $beforeMarker = @()    # BUG: sets to empty when marker is missing OR at line 0
@@ -105,6 +140,7 @@ The bash equivalent uses `sed '/{{__EVENT_DATA__}}/,$ d'`, which **keeps the ent
 Additionally, when `$markerIndex` is `0` (marker on the very first line), the condition is also true, which would also incorrectly discard the template. This is a secondary bug.
 
 **Fix:**
+
 ```powershell
 if ($markerIndex -lt 0) {
     # Marker not found — fall back to full template (matches bash sed behavior)
@@ -126,6 +162,7 @@ if ($markerIndex -lt 0) {
 **Reviewers:** copilot-pull-request-reviewer (x2)
 
 **Analysis:**  
+
 ```powershell
 $injectionHits = $templateLines |
     Select-String -Pattern '\{\{__EVENT_DATA__\}\}' -SimpleMatch
@@ -134,10 +171,13 @@ $injectionHits = $templateLines |
 With `-SimpleMatch`, PowerShell treats the pattern as a **literal string**, not a regex. The literal string here is `\{\{__EVENT_DATA__\}\}` — with backslashes — which will **never** match the actual marker text `{{__EVENT_DATA__}}`. The diagnostic will always report the marker as missing, even when it is present.
 
 **Fix:** Use the literal string with `-SimpleMatch`:
+
 ```powershell
 Select-String -Pattern '{{__EVENT_DATA__}}' -SimpleMatch
 ```
+
 Or drop `-SimpleMatch` and use the correctly escaped regex:
+
 ```powershell
 Select-String -Pattern '\{\{__EVENT_DATA__\}\}'
 ```
@@ -153,6 +193,7 @@ Select-String -Pattern '\{\{__EVENT_DATA__\}\}'
 The bash source uses `set -u`, which causes the script to fail immediately if `EVENT_JSON` is unset. The PS1 version assigns `$env:EVENT_JSON` to `$eventJson` without validation. If `EVENT_JSON` is empty or unset, the assembled prompt will contain an empty ` ```json ``` ` block, and the orchestrator may mis-route the event because it cannot read event data.
 
 **Fix:** After the `$customPrompt` short-circuit block, add explicit validation:
+
 ```powershell
 $eventJson = $env:EVENT_JSON
 if ([string]::IsNullOrWhiteSpace($eventJson)) {
@@ -185,6 +226,7 @@ This defeats the purpose of the new `.ps1` scripts — neither is ever exercised
 **Reviewers:** copilot-pull-request-reviewer, gemini-code-assist (medium)
 
 **Analysis:**  
+
 ```powershell
 $LogFile = if ($env:OPENCODE_SERVER_LOG) { ... } else { '/tmp/opencode-serve.log' }
 $PidFile = if ($env:OPENCODE_SERVER_PIDFILE) { ... } else { '/tmp/opencode-serve.pid' }
@@ -193,6 +235,7 @@ $PidFile = if ($env:OPENCODE_SERVER_PIDFILE) { ... } else { '/tmp/opencode-serve
 `/tmp` does not exist on Windows. While this script runs inside a Linux devcontainer, it is described as cross-platform, and `/tmp` hardcoding violates the repo's own cross-platform convention.
 
 **Fix:**
+
 ```powershell
 $TempDir = [IO.Path]::GetTempPath()
 $LogFile = if ($env:OPENCODE_SERVER_LOG) { $env:OPENCODE_SERVER_LOG } else { Join-Path $TempDir 'opencode-serve.log' }
@@ -207,6 +250,7 @@ $PidFile = if ($env:OPENCODE_SERVER_PIDFILE) { $env:OPENCODE_SERVER_PIDFILE } el
 **Reviewers:** copilot-pull-request-reviewer (x2)
 
 **Analysis:**  
+
 ```powershell
 Invoke-WebRequest -Uri $ReadyUrl -TimeoutSec 2 -ErrorAction Stop | Out-Null
 ```
@@ -214,6 +258,7 @@ Invoke-WebRequest -Uri $ReadyUrl -TimeoutSec 2 -ErrorAction Stop | Out-Null
 `Invoke-WebRequest` throws on **any non-2xx** HTTP status code. The bash readiness check uses `curl -s -o /dev/null` which only checks TCP connectivity — a 404 from the server means "server is up." This behavioral difference causes unnecessary timeouts and server restart attempts in scenarios where the server returns e.g. 404 on the root path but is otherwise healthy.
 
 **Fix:**
+
 ```powershell
 $response = Invoke-WebRequest -Uri $ReadyUrl -TimeoutSec 2 -ErrorAction Stop -SkipHttpErrorCheck
 return ($null -ne $response)
@@ -234,6 +279,7 @@ Furthermore, the script sets `Set-StrictMode -Version Latest` but does **not** s
 **Fix:**
 1. Add `$ErrorActionPreference = 'Stop'` at top of script
 2. After each `devcontainer exec` call, check `$LASTEXITCODE`:
+
 ```powershell
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "devcontainer exec (gather logs) failed with exit code $LASTEXITCODE"
@@ -248,6 +294,7 @@ if ($LASTEXITCODE -ne 0) {
 **Reviewers:** copilot-pull-request-reviewer
 
 **Analysis:**  
+
 ```powershell
 devcontainer exec ... -- bash -c 'tar -cf - -C /tmp/trace-bundle .' | tar -xf - -C $TraceArtifactsDir
 ```
@@ -255,6 +302,7 @@ devcontainer exec ... -- bash -c 'tar -cf - -C /tmp/trace-bundle .' | tar -xf - 
 PowerShell's native command pipeline is not reliably binary-safe. String encoding conversions applied to pipeline data can corrupt binary tar streams, producing broken or incomplete artifacts.
 
 **Fix:** Write tar output to a temporary file and extract from that file:
+
 ```powershell
 $bundleTar = Join-Path $TraceArtifactsDir 'trace-bundle.tar'
 devcontainer exec ... -- bash -c 'tar -cf - -C /tmp/trace-bundle .' > $bundleTar 2>$null
@@ -270,6 +318,7 @@ Remove-Item $bundleTar -ErrorAction SilentlyContinue
 **Reviewers:** copilot-pull-request-reviewer
 
 **Analysis:**  
+
 ```powershell
 devcontainer @dcArgs
 # No $LASTEXITCODE check
@@ -278,6 +327,7 @@ devcontainer @dcArgs
 If `devcontainer exec` fails, the script exits with code 0, hiding the failure from CI and callers.
 
 **Fix:**
+
 ```powershell
 devcontainer @dcArgs
 if ($LASTEXITCODE -ne 0) {
@@ -304,6 +354,7 @@ These are Linux-only utilities. On Windows or macOS without a Linux userland, th
 **Fix options:**
 1. **Clarify scope** — Update the `.DESCRIPTION` and PR docs to state this script is designed exclusively for Linux devcontainer environments (matching the bash original's runtime environment), not for direct Windows/macOS host execution.
 2. **Add platform guard** — Add an early check:
+
 ```powershell
 if (-not $IsLinux) {
     Write-Error 'run_opencode_prompt.ps1 is designed for Linux devcontainer environments only'
@@ -324,6 +375,7 @@ Option 1 is the minimal, correct fix. Option 2 adds a guard that makes the scope
 Same issue as item #7 — `/tmp` hardcoded. Consistent with item #7 fix.
 
 **Fix:**
+
 ```powershell
 $tempBase      = [System.IO.Path]::GetTempPath()
 $ServerLog     = if ($env:OPENCODE_SERVER_LOG)    { $env:OPENCODE_SERVER_LOG }    else { Join-Path $tempBase 'opencode-serve.log' }
@@ -341,6 +393,7 @@ $ServerPidFile = if ($env:OPENCODE_SERVER_PIDFILE) { $env:OPENCODE_SERVER_PIDFIL
 When `DEBUG_ORCHESTRATOR=true`, the script iterates `$opencodeArgs` and prints each argument. If basic-auth credentials are embedded in `-AttachUrl` as `https://user:pass@host:port`, the full credential string is printed to CI logs.
 
 **Fix:** Redact credentials in debug output:
+
 ```powershell
 $safeArg = $opencodeArgs[$i] -replace '://[^:@/]+:[^@/]+@', '://<redacted>@'
 Write-Host "  [$i] $safeArg"
@@ -354,6 +407,7 @@ Write-Host "  [$i] $safeArg"
 **Reviewers:** augmentcode (low), copilot-pull-request-reviewer, gemini-code-assist (medium)
 
 **Analysis:**  
+
 ```powershell
 "Start it first: bash scripts/devcontainer-opencode.sh up"
 ```
@@ -361,6 +415,7 @@ Write-Host "  [$i] $safeArg"
 A Windows/macOS user running `prompt-direct.ps1` to stay in the PowerShell workflow would be confused by an error telling them to run a bash script.
 
 **Fix:**
+
 ```powershell
 "Start it first: ./scripts/devcontainer-opencode.ps1 up"
 ```
@@ -441,6 +496,7 @@ The script declares `[switch]$PrintLogs` as a parameter but never references `$P
 
 **Fix option A:** Remove `-PrintLogs` parameter (simplest — matches current behavior where it's always on).  
 **Fix option B:** Wire it up:
+
 ```powershell
 if ($PrintLogs) { $arguments += '--print-logs' }
 ```

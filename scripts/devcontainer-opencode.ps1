@@ -158,7 +158,7 @@ function Invoke-Start {
         }
     }
 
-    devcontainer exec @sharedArgs -- bash ./scripts/start-opencode-server.sh
+    devcontainer exec @sharedArgs -- pwsh ./scripts/start-opencode-server.ps1
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
@@ -183,10 +183,10 @@ function Invoke-Prompt {
 
     # Build the prompt source arg: -PromptString takes precedence over -PromptFile
     if ($PromptString) {
-        $promptArgs = @('-p', $PromptString)
+        $promptArgs = @('-Prompt', $PromptString)
     }
     else {
-        $promptArgs = @('-f', $PromptFile)
+        $promptArgs = @('-File', $PromptFile)
     }
 
     # Derive default server-side dir from the workspace folder basename
@@ -206,9 +206,9 @@ function Invoke-Prompt {
         '--remote-env', "GITHUB_PERSONAL_ACCESS_TOKEN=$($env:GH_ORCHESTRATION_AGENT_TOKEN)"
         '--remote-env', "GH_ORCHESTRATION_AGENT_TOKEN=$($env:GH_ORCHESTRATION_AGENT_TOKEN)"
         '--'
-        'bash', './run_opencode_prompt.sh',
-        '-a', $OpenCodeServerUrl,
-        '-d', $serverDir
+        'pwsh', './run_opencode_prompt.ps1',
+        '-AttachUrl', $OpenCodeServerUrl,
+        '-WorkDir', $serverDir
     ) + $promptArgs
 
     devcontainer @execArgs

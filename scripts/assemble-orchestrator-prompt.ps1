@@ -80,6 +80,11 @@ if ($customPrompt) {
     exit 0
 }
 
+$eventJson = $env:EVENT_JSON
+if ([string]::IsNullOrWhiteSpace($eventJson)) {
+    Write-Error 'EVENT_JSON environment variable is required when CUSTOM_PROMPT is not set'
+}
+
 # ── Event metadata ───────────────────────────────────────────────────────────
 Write-Output '::group::Event metadata'
 Write-Output "event_name=$EventName"
@@ -117,7 +122,7 @@ Write-Output "Template size: $($templateContent.Length) bytes, $($templateLines.
 
 Write-Output 'Injection point occurrences:'
 $injectionHits = $templateLines |
-    Select-String -Pattern '\{\{__EVENT_DATA__\}\}' -SimpleMatch
+    Select-String -Pattern '{{__EVENT_DATA__}}' -SimpleMatch
 if ($injectionHits) {
     $injectionHits | ForEach-Object { Write-Output $_.ToString() }
 } else {
@@ -135,13 +140,13 @@ for ($i = 0; $i -lt $templateLines.Count; $i++) {
     }
 }
 
-if ($markerIndex -le 0) {
+if ($markerIndex -lt 0) {
+    $beforeMarker = $templateLines
+} elseif ($markerIndex -eq 0) {
     $beforeMarker = @()
 } else {
     $beforeMarker = $templateLines[0..($markerIndex - 1)]
 }
-
-$eventJson = $env:EVENT_JSON
 
 $assembled = @(
     $beforeMarker

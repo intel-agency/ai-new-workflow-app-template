@@ -61,7 +61,7 @@ scope: repository
     <item>Google Gemini models (`gemini-3.1-pro-preview`, `gemini-3.1-flash-lite-preview`, etc.) via `GEMINI_API_KEY`</item>
     <item>GitHub Actions — workflow trigger and runner; prebuilt devcontainer from `intel-agency/workflow-orchestration-prebuild`</item>
     <item>Can be .NET SDK 10 + Aspire + Avalonia templates, Bun, uv, python (all in devcontainer, sourced from external prebuild image)</item>
-       <note> These are the technologie4s builtin to the prebuild image, and represent the most common technologies that are used, but the  actual tech stack is determined and defined by what is specified in a given set of plan docs files. The final tech stack will be set when the scripting and project-setup dynamic workflow processes are run.
+       <note> These are the technologies builtin to the prebuild image, and represent the most common technologies that are used, but the  actual tech stack is determined and defined by what is specified in a given set of plan docs files. The final tech stack will be set when the scripting and project-setup dynamic workflow processes are run.
        </note>
     <item>MCP servers (enabled): `@modelcontextprotocol/server-sequential-thinking`, `mcp-memory-service` (SQLite-vec persistent memory via uvx)</item>
     <item>MCP servers (disabled): `@modelcontextprotocol/server-github`, `https://mcp.grep.app`</item>
@@ -168,7 +168,7 @@ scope: repository
     <rule>The Dockerfile and prebuild pipeline live in the external `intel-agency/workflow-orchestration-prebuild` repo. Consumer devcontainer uses `"image:"` pointing to `ghcr.io/intel-agency/workflow-orchestration-prebuild/devcontainer:main-latest` — no local build in this repo.</rule>
     <rule>Repository labels are defined in `.github/.labels.json`. Use `scripts/import-labels.ps1` to sync them to a repo instance. When adding new labels, add them to this file — it is the single source of truth for the label set.</rule>
     <rule>Implementation approval protocol: before implementing any non-trivial change, verify that explicit approval was given for that specific item AND that no significant state or circumstances have changed since approval was given. If approval was never given, or was invalidated by changed circumstances, stop and ask before acting. When in doubt — ask, don't act.</rule>
-    <rule>When asked for an anaylsis, analyze the issue, and include in a markdown document your analysis of the problem, the root cause with specific references to lines of code, documentation, or other evidence, multiple proposed solutions with pros and cons, and your recommendations, each supported by reasoning. You can also include a step-by-step plan for when the recommended solution is obvious. Do not write code until the analysis is complete and the plan is defined.</rule>
+    <rule>When asked for an analysis, analyze the issue, and include in a markdown document your analysis of the problem, the root cause with specific references to lines of code, documentation, or other evidence, multiple proposed solutions with pros and cons, and your recommendations, each supported by reasoning. You can also include a step-by-step plan for when the recommended solution is obvious. Do not write code until the analysis is complete and the plan is defined.</rule>
   </coding_conventions>
 
   <!-- ═══════════════════════════════════════════════════════════════════

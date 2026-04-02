@@ -4,8 +4,10 @@
 .SYNOPSIS
     Launches opencode with an orchestrator prompt and monitors for idle activity.
 .DESCRIPTION
-    PowerShell 7+ cross-platform equivalent of run_opencode_prompt.sh.
-    Designed to run inside a Linux devcontainer with pwsh.
+    PowerShell 7+ equivalent of run_opencode_prompt.sh.
+    This script is designed to run inside a Linux devcontainer with pwsh.
+    It is not intended for direct Windows/macOS host execution because its
+    process-management and watchdog logic rely on Linux userland tools.
 
     Features:
     - Parameter parsing and validation (same behaviour as bash version)
@@ -46,11 +48,16 @@ param(
     [ValidateSet('DEBUG', 'INFO', 'WARN', 'ERROR')]
     [string]$LogLevel = 'INFO',
 
-    [Parameter(HelpMessage = 'Enable --print-logs')]
+    [Parameter(HelpMessage = 'Enable --print-logs (defaults to on; pass -PrintLogs:$false to suppress)')]
     [switch]$PrintLogs
 )
 
 $ErrorActionPreference = 'Stop'
+
+if (-not $IsLinux) {
+    Write-Host '::error::run_opencode_prompt.ps1 is designed for Linux devcontainer environments only'
+    exit 1
+}
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 $IDLE_TIMEOUT_SECS    = 900    # 15 min of total I/O silence → kill
@@ -201,7 +208,8 @@ $opencodeArgs.AddRange([string[]]@(
     '--log-level', $LogLevel,
     '--thinking'
 ))
-$opencodeArgs.Add('--print-logs')
+$shouldPrintLogs = $PrintLogs.IsPresent -or -not $PSBoundParameters.ContainsKey('PrintLogs')
+if ($shouldPrintLogs) { $opencodeArgs.Add('--print-logs') }
 if ($formatFlag.Count -gt 0)  { $opencodeArgs.AddRange([string[]]$formatFlag) }
 if ($AttachUrl)                { $opencodeArgs.Add('--attach'); $opencodeArgs.Add($AttachUrl) }
 if ($WorkDir)                  { $opencodeArgs.Add('--dir');    $opencodeArgs.Add($WorkDir) }
@@ -223,7 +231,8 @@ if ($env:DEBUG_ORCHESTRATOR -eq 'true') {
     Write-Host "Prompt last 200 chars:  $($Prompt.Substring([Math]::Max(0, $Prompt.Length - 200)))"
     Write-Host 'opencode args (excluding prompt):'
     for ($i = 0; $i -lt $opencodeArgs.Count - 1; $i++) {
-        Write-Host "  [$i] $($opencodeArgs[$i])"
+        $safeArg = $opencodeArgs[$i] -replace '://[^:@/]+:[^@/]+@', '://<redacted>@'
+        Write-Host "  [$i] $safeArg"
     }
     Write-Host "  [$($opencodeArgs.Count - 1)] <prompt content, $($Prompt.Length) chars>"
     Write-Host '=== end diagnostics ==='
@@ -234,8 +243,8 @@ Write-Host "Starting opencode at $((Get-Date).ToUniversalTime().ToString('yyyy-M
 # ── Temp files and paths ──────────────────────────────────────────────────────
 $tempBase      = [System.IO.Path]::GetTempPath()
 $OutputLog     = Join-Path $tempBase "opencode-output.$PID.$(Get-Random)"
-$ServerLog     = if ($env:OPENCODE_SERVER_LOG)     { $env:OPENCODE_SERVER_LOG }     else { '/tmp/opencode-serve.log' }
-$ServerPidFile = if ($env:OPENCODE_SERVER_PIDFILE)  { $env:OPENCODE_SERVER_PIDFILE } else { '/tmp/opencode-serve.pid' }
+$ServerLog     = if ($env:OPENCODE_SERVER_LOG)     { $env:OPENCODE_SERVER_LOG }     else { Join-Path $tempBase 'opencode-serve.log' }
+$ServerPidFile = if ($env:OPENCODE_SERVER_PIDFILE) { $env:OPENCODE_SERVER_PIDFILE } else { Join-Path $tempBase 'opencode-serve.pid' }
 
 # Touch the output log so tail can start immediately
 [System.IO.File]::WriteAllText($OutputLog, '')

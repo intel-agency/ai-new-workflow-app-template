@@ -53,9 +53,10 @@ param(
     [string]$Label,
 
     [Parameter(Mandatory)]
-    [string]$Actor
+[string]$Actor
 )
 
+$ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 # ---------------------------------------------------------------------------
@@ -83,6 +84,15 @@ $LabelDisplay = if ([string]::IsNullOrEmpty($Label)) { 'N/A' } else { $Label }
 $TraceArtifactsDir = Join-Path ([IO.Path]::GetTempPath()) 'trace-artifacts'
 $TraceBundleDir    = Join-Path ([IO.Path]::GetTempPath()) 'trace-bundle'
 
+function Write-DevcontainerWarning {
+    param(
+        [string]$StepName,
+        [int]$ExitCode
+    )
+
+    Write-Warning "devcontainer exec ($StepName) failed with exit code $ExitCode"
+}
+
 # ── Collect trace artifacts ─────────────────────────────────────────
 Write-Output '::group::Trace artifact collection (runs on success AND failure)'
 Write-Output "Job status: $JobStatus"
@@ -93,39 +103,40 @@ if (-not (Test-Path $TraceArtifactsDir)) {
 }
 
 # Step 1 — Gather logs inside the devcontainer
-try {
-    devcontainer exec `
-        --workspace-folder . `
-        --config .devcontainer/devcontainer.json `
-        -- bash -c "
-            mkdir -p /tmp/trace-bundle;
-            cp ~/.local/share/opencode/log/*.log /tmp/trace-bundle/ 2>/dev/null || true;
-            cp /tmp/opencode-serve.log /tmp/trace-bundle/opencode-serve.log 2>/dev/null || true;
-            python3 scripts/trace-extract.py --scrub > /tmp/trace-bundle/subagent-traces.txt 2>&1 || true;
-        "
-} catch {
-    Write-Output "Warning: devcontainer exec (gather logs) failed: $_"
+devcontainer exec `
+    --workspace-folder . `
+    --config .devcontainer/devcontainer.json `
+    -- bash -c "
+        mkdir -p /tmp/trace-bundle;
+        cp ~/.local/share/opencode/log/*.log /tmp/trace-bundle/ 2>/dev/null || true;
+        cp /tmp/opencode-serve.log /tmp/trace-bundle/opencode-serve.log 2>/dev/null || true;
+        python3 scripts/trace-extract.py --scrub > /tmp/trace-bundle/subagent-traces.txt 2>&1 || true;
+    "
+if ($LASTEXITCODE -ne 0) {
+    Write-DevcontainerWarning -StepName 'gather logs' -ExitCode $LASTEXITCODE
 }
 
 # Step 2 — Extract subagent traces text file
-try {
-    $subagentOut = Join-Path $TraceArtifactsDir 'subagent-traces.txt'
-    devcontainer exec `
-        --workspace-folder . `
-        --config .devcontainer/devcontainer.json `
-        -- bash -c 'cat /tmp/trace-bundle/subagent-traces.txt' > $subagentOut 2>$null
-} catch {
-    Write-Output "Warning: devcontainer exec (subagent traces) failed: $_"
+$subagentOut = Join-Path $TraceArtifactsDir 'subagent-traces.txt'
+devcontainer exec `
+    --workspace-folder . `
+    --config .devcontainer/devcontainer.json `
+    -- bash -c 'cat /tmp/trace-bundle/subagent-traces.txt' > $subagentOut 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-DevcontainerWarning -StepName 'subagent traces' -ExitCode $LASTEXITCODE
 }
 
-# Step 3 — Extract full trace bundle via tar pipe
-try {
-    devcontainer exec `
-        --workspace-folder . `
-        --config .devcontainer/devcontainer.json `
-        -- bash -c 'tar -cf - -C /tmp/trace-bundle .' | tar -xf - -C $TraceArtifactsDir 2>$null
-} catch {
-    Write-Output "Warning: devcontainer exec (tar extract) failed: $_"
+# Step 3 — Extract full trace bundle via temp file to avoid PowerShell binary-pipeline corruption
+$bundleTar = Join-Path $TraceArtifactsDir 'trace-bundle.tar'
+devcontainer exec `
+    --workspace-folder . `
+    --config .devcontainer/devcontainer.json `
+    -- bash -c 'tar -cf - -C /tmp/trace-bundle .' > $bundleTar 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-DevcontainerWarning -StepName 'tar bundle export' -ExitCode $LASTEXITCODE
+} elseif (Test-Path -LiteralPath $bundleTar) {
+    tar -xf $bundleTar -C $TraceArtifactsDir 2>$null
+    Remove-Item $bundleTar -ErrorAction SilentlyContinue
 }
 
 # Count and list collected artifacts

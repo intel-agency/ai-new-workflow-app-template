@@ -36,10 +36,11 @@ if ($env:GH_ORCHESTRATION_AGENT_TOKEN) {
 $env:OPENCODE_EXPERIMENTAL = '1'
 
 # ── Configurable defaults (all overridable via env vars) ────────────
+$TempDir     = [IO.Path]::GetTempPath()
 $Hostname    = if ($env:OPENCODE_SERVER_HOSTNAME)            { $env:OPENCODE_SERVER_HOSTNAME }            else { '0.0.0.0' }
 $Port        = if ($env:OPENCODE_SERVER_PORT)                { $env:OPENCODE_SERVER_PORT }                else { '4096' }
-$LogFile     = if ($env:OPENCODE_SERVER_LOG)                 { $env:OPENCODE_SERVER_LOG }                 else { '/tmp/opencode-serve.log' }
-$PidFile     = if ($env:OPENCODE_SERVER_PIDFILE)             { $env:OPENCODE_SERVER_PIDFILE }             else { '/tmp/opencode-serve.pid' }
+$LogFile     = if ($env:OPENCODE_SERVER_LOG)                 { $env:OPENCODE_SERVER_LOG }                 else { Join-Path $TempDir 'opencode-serve.log' }
+$PidFile     = if ($env:OPENCODE_SERVER_PIDFILE)             { $env:OPENCODE_SERVER_PIDFILE }             else { Join-Path $TempDir 'opencode-serve.pid' }
 $ReadyTimeout = if ($env:OPENCODE_SERVER_READY_TIMEOUT_SECS) { [int]$env:OPENCODE_SERVER_READY_TIMEOUT_SECS } else { 30 }
 $ReadyUrl    = if ($env:OPENCODE_SERVER_READY_URL)           { $env:OPENCODE_SERVER_READY_URL }           else { "http://127.0.0.1:${Port}/" }
 $LogLevel    = if ($env:OPENCODE_SERVER_LOG_LEVEL)           { $env:OPENCODE_SERVER_LOG_LEVEL }           else { 'INFO' }
@@ -57,8 +58,8 @@ function Test-ServerReady {
         Returns $true when the health-check URL responds successfully.
     #>
     try {
-        Invoke-WebRequest -Uri $ReadyUrl -TimeoutSec 2 -ErrorAction Stop | Out-Null
-        return $true
+        $response = Invoke-WebRequest -Uri $ReadyUrl -TimeoutSec 2 -ErrorAction Stop -SkipHttpErrorCheck
+        return ($null -ne $response)
     }
     catch {
         return $false
@@ -148,23 +149,45 @@ if (Test-ServerReady) {
 # ── Launch opencode serve as a background process ──────────────────
 Write-LogMessage "starting opencode serve on ${Hostname}:${Port} (log-level: ${LogLevel}, print-logs: on)"
 
-# Build the stderr redirect path (append stdout and stderr to the same log)
-$stderrLog = "${LogFile}.stderr"
+$serverPid = $null
+$stderrLog = $null
 
-$proc = Start-Process -FilePath 'opencode' `
-    -ArgumentList @(
-        'serve',
-        '--hostname', $Hostname,
-        '--port', $Port,
-        '--log-level', $LogLevel,
-        '--print-logs'
-    ) `
-    -NoNewWindow `
-    -RedirectStandardOutput $LogFile `
-    -RedirectStandardError $stderrLog `
-    -PassThru
+if ($IsLinux) {
+    $command = "setsid opencode serve --hostname " +
+        [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($Hostname) +
+        " --port " +
+        [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($Port) +
+        " --log-level " +
+        [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($LogLevel) +
+        " --print-logs >> '" +
+        [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($LogFile) +
+        "' 2>&1 < /dev/null & echo `$!"
 
-$serverPid = $proc.Id
+    $serverPid = & bash -lc $command
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($serverPid)) {
+        Write-Error 'Failed to start opencode serve with setsid'
+        exit 1
+    }
+    $serverPid = $serverPid.Trim()
+} else {
+    # Start-Process cannot append both streams into one file, so keep stderr separate on non-Linux hosts.
+    $stderrLog = "${LogFile}.stderr"
+    $proc = Start-Process -FilePath 'opencode' `
+        -ArgumentList @(
+            'serve',
+            '--hostname', $Hostname,
+            '--port', $Port,
+            '--log-level', $LogLevel,
+            '--print-logs'
+        ) `
+        -NoNewWindow `
+        -RedirectStandardOutput $LogFile `
+        -RedirectStandardError $stderrLog `
+        -PassThru
+
+    $serverPid = [string]$proc.Id
+}
+
 Set-Content -Path $PidFile -Value $serverPid -NoNewline
 
 # ── Health-check polling loop ──────────────────────────────────────
@@ -177,10 +200,10 @@ while ($true) {
         exit 0
     }
 
-    if (-not (Test-ProcessAlive -ProcessId $serverPid)) {
+    if (-not (Test-ProcessAlive -ProcessId ([int]$serverPid))) {
         Write-Error "opencode serve exited before becoming ready; tail of log:"
-        if (Test-Path $LogFile)    { Get-Content $LogFile    -Tail 50 | Write-Host }
-        if (Test-Path $stderrLog)  { Get-Content $stderrLog  -Tail 50 | Write-Host }
+        if (Test-Path $LogFile)   { Get-Content $LogFile -Tail 50 | Write-Host }
+        if ($stderrLog -and (Test-Path $stderrLog)) { Get-Content $stderrLog -Tail 50 | Write-Host }
         exit 1
     }
 

@@ -48,7 +48,9 @@ Also convert the root-level wrapper:
 - **Input validation**: Validate required env vars / parameters at the top of each script
   with clear error messages.
 - **Cross-platform paths**: Use `[IO.Path]::Combine()` or `Join-Path` instead of
-  string concatenation; never hard-code `/` or `\`.
+  string concatenation and avoid manually hard-coding path separators; known
+  environment- or container-specific absolute paths (for example `/tmp` or
+  `/workspaces`) are allowed where appropriate.
 - **Logging**: Use `Write-Host` for user-facing output and `Write-Verbose` for debug
   detail; preserve the same log levels as the originals.
 
@@ -64,7 +66,8 @@ All new `.ps1` scripts **must** follow the patterns already established in the r
 3. **`$ErrorActionPreference = 'Stop'`** and **`Set-StrictMode -Version Latest`** at script top.
 4. **GitHub CLI**: Arg-splatting pattern (`$ghArgs = @(…); & gh @ghArgs`).
 5. **Docker CLI**: Capture JSON output with `ConvertFrom-Json` where possible.
-6. **Dry-run**: Include a `-DryRun` switch for any script that mutates state.
+6. **Dry-run**: Prefer including a `-DryRun` switch for scripts that mutate state,
+   especially new ones, even though some existing scripts may not yet implement it.
 7. **Dot-sourcing**: Reuse `common-auth.ps1` for auth logic.
 
 ---
