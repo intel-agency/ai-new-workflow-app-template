@@ -153,7 +153,10 @@ scope: repository
   </testing>
 
   <coding_conventions>
-    <rule>Keep changes minimal and targeted.</rule>
+    <rule>Make the smallest possible change to achieve the goal. Stick strictly to the assigned task — do not refactor, restructure, or touch unrelated code.</rule>
+    <rule>Never make assumptions. Work only from information explicitly provided. If something is unclear or missing, ask before acting.</rule>
+    <rule>Back every assertion with first-hand evidence: cite specific file paths, line numbers, or documentation. Never state something is true without a concrete reference.</rule>
+    <rule>Never commit changes you have not personally validated. Always run, build, lint, and test according to the prescribed validation rules before committing.</rule>
     <rule>Do not hardcode secrets/tokens. When writing tests for credential-scrubbing or secret-detection utilities, use obviously synthetic values that will not trigger `gitleaks` (e.g., `FAKE-KEY-FOR-TESTING-00000000`). Never use prefixes that match real provider formats (`sk-`, `ghp_`, `ghs_`, `AKIA`, etc.) in test fixtures.</rule>
     <rule>Preserve the `__EVENT_DATA__` placeholder in `orchestrator-agent-prompt.md`.</rule>
     <rule>Keep orchestrator delegation-depth ≤2 and "never write code directly" constraint.</rule>
