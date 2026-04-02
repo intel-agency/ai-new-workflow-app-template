@@ -12,7 +12,11 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -46,7 +50,11 @@ jobs:
         run: ./scripts/validate.ps1 -Scan
 
   test:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     env:
@@ -67,7 +75,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: pester-test-results
+          name: pester-test-results-${{ matrix.os }}
           path: test-results-pester.xml
           if-no-files-found: ignore
 

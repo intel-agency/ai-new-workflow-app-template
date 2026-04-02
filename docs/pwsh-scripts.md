@@ -38,8 +38,8 @@ Also convert the root-level wrapper:
   `.github/workflows/validate.yml` (prompt-assembly, image-tag-logic, etc.).
 - Run the new `.ps1` tests **in parallel** with existing `.sh` tests in CI so both
   paths are validated on every push.
-- Update `validate.yml` to include a `pwsh` matrix leg (or parallel job) that exercises
-  the PowerShell scripts.
+- `validate.yml` runs `lint` and `test` jobs on a **matrix of `ubuntu-24.04` and `windows-latest`**
+  so cross-platform behavior is verified on every push/PR.
 
 ### 3 — Robustness Improvements (both `.sh` and `.ps1`)
 
@@ -77,7 +77,7 @@ All new `.ps1` scripts **must** follow the patterns already established in the r
 - [x] All scripts pass **PSScriptAnalyzer** with zero warnings (already enforced in CI).
 - [x] Pester tests exist for any non-trivial logic (image-tag computation, prompt assembly,
       env-var validation).
-- [x] `validate.yml` runs the new PowerShell tests alongside existing bash tests.
+- [x] `validate.yml` `lint` and `test` jobs run on both `ubuntu-24.04` **and** `windows-latest` (matrix).
 - [ ] Manual smoke test passes on at least **Windows (pwsh 7)** and **Linux (pwsh 7)**.
 
 ---
@@ -137,4 +137,4 @@ Convert in dependency order (low → high complexity):
 
 - **PSScriptAnalyzer**: 0 warnings across all 14 new files
 - **Pester**: 20/20 tests passing (11 existing + 9 new)
-- **CI**: New tests auto-discovered by existing `test/run-pester-tests.ps1` runner
+- **CI matrix**: `lint` and `test` jobs run on `ubuntu-24.04` **and** `windows-latest`; `scan` remains Linux-only (gitleaks)
