@@ -199,9 +199,7 @@ function Invoke-Prompt {
 
     $sharedArgs = Get-SharedArgs
 
-    $execArgs = @(
-        'exec'
-        @sharedArgs
+    $execArgs = @('exec') + $sharedArgs + @(
         '--remote-env', "ZHIPU_API_KEY=$($env:ZHIPU_API_KEY)"
         '--remote-env', "KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY=$($env:KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY)"
         '--remote-env', "GITHUB_TOKEN=$($env:GH_ORCHESTRATION_AGENT_TOKEN)"
@@ -211,8 +209,7 @@ function Invoke-Prompt {
         'bash', './run_opencode_prompt.sh',
         '-a', $OpenCodeServerUrl,
         '-d', $serverDir
-        $promptArgs
-    )
+    ) + $promptArgs
 
     devcontainer @execArgs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
