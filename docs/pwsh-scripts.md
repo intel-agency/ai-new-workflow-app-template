@@ -1,0 +1,3 @@
+Create working pwsh .ps1 script  equivalents for everything used by, and including , `scripts/devcontainer-opencode.sh` so tha pwsh can be used on linux, macOS, and Windows.  The scripts should be named the same name as the original .sh scripts, with '.sh' extensions replaced with '.ps1' and should be placed in the same directory as the original `.sh` scripts.
+
+Create equivalent to the .sh scripts in `validate.yml` and add them to the CI in parallel with the existing .sh scripts. More robust validation and error handling should be created in the .ps1 (and existing .shscripts to ensure they work correctly across different platforms and environments.
