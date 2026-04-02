@@ -1,6 +1,6 @@
 ---
 name: validate-and-commit
-description: "Finishing workflow: update docs with implementation status, group staged changes into logical commits with meaningful messages, push only agent-changed files (leave unrelated uncommitted files alone). Use when: wrapping up a task, committing work, finalizing implementation, updating task doc status, grouping commits, push changes, finish up, done implementing, ready to commit."
+description: "Finishing workflow: run validation, update docs with implementation status, group changes into logical commits with meaningful messages, push only agent-changed files (leave unrelated uncommitted files alone). Use when: wrapping up a task, committing work, finalizing implementation, updating task doc status, grouping commits, push changes, finish up, done implementing, ready to commit."
 argument-hint: "Optional: describe what was implemented (used to write commit messages and doc summary)"
 ---
 
@@ -64,7 +64,33 @@ Separate files into two buckets:
 
 Use `git diff --name-only HEAD` and `git ls-files --others --exclude-standard` to identify candidates. When in doubt about a file, check `git log --follow -- <file>` or skip it.
 
-### Step 4 — Group into logical commits
+### Step 4 — Run validation *(REQUIRED — do not commit until this passes)*
+
+> **Nothing may be committed until all validation passes.** This is a hard gate.
+
+Check `AGENTS.md` (or `docs/README.validation.md`, `CONTRIBUTING.md`) for the project's validation conventions — it will specify the exact commands to run. If no such file exists, apply common sense (lint, tests, type-check, build).
+
+**Typical validation sequence:**
+
+```powershell
+# 1. Run the project's own validation script (most common pattern)
+pwsh -NoProfile -File ./scripts/validate.ps1 -All    # or -Lint, -Test, -Scan individually
+
+# 2. Or run individual tools if no unified script exists
+#    e.g. npm test, pytest, go test ./..., dotnet test, etc.
+```
+
+**If validation fails:**
+
+1. Read the error output carefully — identify the specific file(s) and rule(s) failing.
+2. Fix the issue(s) in the affected files.
+3. Re-run the full validation suite (not just the failing check in isolation).
+4. Repeat until **all checks pass with zero errors**.
+5. Report what failed and what was fixed — include this in the relevant commit message body.
+
+**Do not skip or work around failing checks.** If a check cannot be fixed (e.g., a pre-existing failure unrelated to your changes), document it explicitly and confirm with the user before proceeding.
+
+### Step 5 — Group into logical commits
 
 Think about the *type* and *purpose* of each file changed and form groups. Common groupings:
 
@@ -79,7 +105,7 @@ Think about the *type* and *purpose* of each file changed and form groups. Commo
 
 **Rule**: 1 group = 1 commit. If only 1–3 files total, one commit is fine.
 
-### Step 5 — Commit each group
+### Step 6 — Commit each group
 
 For each group:
 
@@ -101,7 +127,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 - Body: explain *what* changed and *why*, not *how*
 - Always include the `Co-authored-by` trailer
 
-### Step 6 — Verify before pushing
+### Step 7 — Verify before pushing
 
 ```powershell
 git --no-pager log --oneline -5          # Review commit history
@@ -111,7 +137,7 @@ git --no-pager diff HEAD                 # Should be empty (or only expected uns
 
 If anything looks wrong (wrong files staged, missing files), fix before pushing.
 
-### Step 7 — Push
+### Step 8 — Push
 
 ```powershell
 git push
@@ -128,7 +154,8 @@ git push -u origin <branch-name>
 
 Before finishing, verify:
 
-- [ ] Docs reflect current implementation status (acceptance criteria ticked, status tables up to date)
+- [ ] **Validation passed** — all checks in `AGENTS.md` ran successfully with zero errors
+- [ ] Docs updated with implementation summary and item statuses (if a plan/task doc was used)
 - [ ] Each commit has a meaningful conventional message
 - [ ] No unrelated files were accidentally staged
 - [ ] `git status` is clean (or only expected pre-existing uncommitted files remain)
