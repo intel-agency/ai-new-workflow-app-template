@@ -31,16 +31,25 @@ git --no-pager status --short
 git --no-pager diff --stat HEAD
 ```
 
-### Step 2 — Update documentation (if applicable)
+### Step 2 — Update documentation *(optional — skip if no plan/task doc was used)*
 
-If a task/plan document was used (e.g., `docs/*.md`, `PLAN.md`, `pwsh-scripts.md`, or session plan):
+**When to do this step**: Only if a plan or task document was created at the start of the task and used to guide the work (e.g., a session `plan.md`, a `docs/feature-name.md`, a task spec, or any doc that listed planned items to implement). If no such doc exists, skip to Step 3.
 
-1. **Check acceptance criteria** — tick any boxes that are now met.
-2. **Add/update an Implementation Status section** with:
-   - What was delivered (files created/changed)
-   - Test results (pass counts, tool outputs)
-   - Any remaining items or known caveats
-3. Keep it factual and brief — a table of files + status is ideal.
+**How to identify the doc**: Look for a file that was referenced at the start of the task to describe what needed to be done — it may be in `docs/`, the session workspace, or the repo root. If unsure, check the conversation history for when a plan or task file was created or updated.
+
+**What to write**: Update the doc in-place (do not create a new file). Include:
+
+1. **Summary of changes made** — a brief description or table of what was created, modified, or deleted, and what it does.
+
+2. **Status of planned items** — for each item that was planned, mark it as one of:
+   - ✅ **Implemented** — done, with a one-line summary of what was produced
+   - ⏭️ **Deferred** — not done this session; note why (out of scope, blocked, deprioritised)
+   - ❌ **Not implemented** — explicitly decided against; note the reason
+   - ⚠️ **Partial** — started but incomplete; note what remains
+
+3. **Issues or deviations** — anything that didn't go as planned: unexpected failures, workarounds applied, scope changes, or follow-up items discovered during implementation.
+
+Keep entries factual and brief. A table or short bullet list per item is ideal. Do not pad — if everything went smoothly and all items are implemented, a simple status table is sufficient.
 
 Only update docs that are part of the task. Never create new markdown files for tracking.
 
