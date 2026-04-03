@@ -203,7 +203,7 @@ if ($env:DEBUG_ORCHESTRATOR -eq 'true') {
 $opencodeArgs = [System.Collections.Generic.List[string]]::new()
 $opencodeArgs.AddRange([string[]]@(
     'run',
-    '--model',     'zai-coding-plan/glm-5',
+    '--model',     'zai-coding-plan/glm-5.1',
     '--agent',     'orchestrator',
     '--log-level', $LogLevel,
     '--thinking'

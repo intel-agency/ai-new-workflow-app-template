@@ -110,7 +110,7 @@ run_case() {
     return
   fi
 
-  cmd="timeout 120s opencode run --print-logs --log-level DEBUG --model zai-coding-plan/glm-5 --agent ${agent_name}"
+  cmd="timeout 120s opencode run --print-logs --log-level DEBUG --model zai-coding-plan/glm-5.1 --agent ${agent_name}"
   if [[ "$prompt_mode" == "flag" ]]; then
     cmd="${cmd} --prompt \"\$(cat ${CONTAINER_PROMPT_FILE})\""
   else
