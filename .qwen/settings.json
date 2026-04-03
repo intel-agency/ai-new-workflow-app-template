@@ -14,8 +14,8 @@
     },
     "memory": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["mcp-memory-service"],
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
       "version": "0.0.1"
     },
     "microsoft-docs": {

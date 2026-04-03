@@ -221,11 +221,14 @@ if ($Test) {
             }
         }
         if (Test-Path 'test/test-watchdog-io-detection.sh') {
-            Invoke-Check 'watchdog-io-detection tests' {
-                $output = bash test/test-watchdog-io-detection.sh 2>&1
-                if ($LASTEXITCODE -ne 0) { throw ($output -join "`n") }
-                Write-Host ($output -join "`n")
+            if ($IsLinux) {
+                Invoke-Check 'watchdog-io-detection tests' {
+                    $output = bash test/test-watchdog-io-detection.sh 2>&1
+                    if ($LASTEXITCODE -ne 0) { throw ($output -join "`n") }
+                    Write-Host ($output -join "`n")
+                }
             }
+            else { Skip-Check 'watchdog-io-detection tests' 'Linux-only test (requires /proc filesystem and grep -P)' }
         }
     }
     else { Skip-Check 'bash tests' 'bash not available on this system' }

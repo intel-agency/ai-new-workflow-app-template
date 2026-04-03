@@ -60,8 +60,10 @@ scope: repository
     <item>OpenAI models (`gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-5.3-codex`) via `OPENAI_API_KEY`</item>
     <item>Google Gemini models (`gemini-3.1-pro-preview`, `gemini-3.1-flash-lite-preview`, etc.) via `GEMINI_API_KEY`</item>
     <item>GitHub Actions — workflow trigger and runner; prebuilt devcontainer from `intel-agency/workflow-orchestration-prebuild`</item>
-    <item>.NET SDK 10 + Aspire + Avalonia templates, Bun, uv (all in devcontainer, sourced from external prebuild image)</item>
-    <item>MCP servers (enabled): `@modelcontextprotocol/server-sequential-thinking`, `mcp-memory-service` (SQLite-vec persistent memory via uvx)</item>
+    <item>Can be .NET SDK 10 + Aspire + Avalonia templates, Bun, uv, python (all in devcontainer, sourced from external prebuild image)</item>
+       <note> These are the technologies builtin to the prebuild image, and represent the most common technologies that are used, but the  actual tech stack is determined and defined by what is specified in a given set of plan docs files. The final tech stack will be set when the scripting and project-setup dynamic workflow processes are run.
+       </note>
+    <item>MCP servers (enabled): `@modelcontextprotocol/server-sequential-thinking`, `@modelcontextprotocol/server-memory` (knowledge graph, file-based JSONL via npx)</item>
     <item>MCP servers (disabled): `@modelcontextprotocol/server-github`, `https://mcp.grep.app`</item>
   </tech_stack>
 
@@ -153,7 +155,10 @@ scope: repository
   </testing>
 
   <coding_conventions>
-    <rule>Keep changes minimal and targeted.</rule>
+    <rule>Make the smallest possible change to achieve the goal. Stick strictly to the assigned task — do not refactor, restructure, or touch unrelated code.</rule>
+    <rule>Never make assumptions. Work only from information explicitly provided. If something is unclear or missing, ask before acting.</rule>
+    <rule>Back every assertion with first-hand evidence: cite specific file paths, line numbers, or documentation. Never state something is true without a concrete reference.</rule>
+    <rule>Never commit changes you have not personally validated. Always run, build, lint, and test according to the prescribed validation rules before committing.</rule>
     <rule>Do not hardcode secrets/tokens. When writing tests for credential-scrubbing or secret-detection utilities, use obviously synthetic values that will not trigger `gitleaks` (e.g., `FAKE-KEY-FOR-TESTING-00000000`). Never use prefixes that match real provider formats (`sk-`, `ghp_`, `ghs_`, `AKIA`, etc.) in test fixtures.</rule>
     <rule>Preserve the `__EVENT_DATA__` placeholder in `orchestrator-agent-prompt.md`.</rule>
     <rule>Keep orchestrator delegation-depth ≤2 and "never write code directly" constraint.</rule>
@@ -163,6 +168,7 @@ scope: repository
     <rule>The Dockerfile and prebuild pipeline live in the external `intel-agency/workflow-orchestration-prebuild` repo. Consumer devcontainer uses `"image:"` pointing to `ghcr.io/intel-agency/workflow-orchestration-prebuild/devcontainer:main-latest` — no local build in this repo.</rule>
     <rule>Repository labels are defined in `.github/.labels.json`. Use `scripts/import-labels.ps1` to sync them to a repo instance. When adding new labels, add them to this file — it is the single source of truth for the label set.</rule>
     <rule>Implementation approval protocol: before implementing any non-trivial change, verify that explicit approval was given for that specific item AND that no significant state or circumstances have changed since approval was given. If approval was never given, or was invalidated by changed circumstances, stop and ask before acting. When in doubt — ask, don't act.</rule>
+    <rule>When asked for an analysis, analyze the issue, and include in a markdown document your analysis of the problem, the root cause with specific references to lines of code, documentation, or other evidence, multiple proposed solutions with pros and cons, and your recommendations, each supported by reasoning. You can also include a step-by-step plan for when the recommended solution is obvious. Do not write code until the analysis is complete and the plan is defined.</rule>
   </coding_conventions>
 
   <!-- ═══════════════════════════════════════════════════════════════════
@@ -177,7 +183,6 @@ scope: repository
       suggestions; they are mandatory requirements that apply to every non-trivial task.
       Agents that skip these protocols are operating incorrectly.
     </overview>
-
     <protocol id="sequential_thinking" enforcement="MANDATORY">
       <title>Sequential Thinking Tool — ALWAYS USE</title>
       <tool>sequential_thinking</tool>
@@ -193,20 +198,23 @@ scope: repository
       </required_usage_points>
       <violation>Skipping sequential thinking on a non-trivial task is a protocol violation. If an agent completes a complex task without invoking sequential_thinking, the work should be reviewed for quality issues.</violation>
     </protocol>
-
     <protocol id="persistent_memory" enforcement="MANDATORY">
-      <title>Persistent Memory — ALWAYS USE</title>
+      <title>Knowledge Graph Memory — ALWAYS USE</title>
       <tools>
-        <tool>store_memory</tool>
-        <tool>retrieve_memory</tool>
-        <tool>search_by_tag</tool>
-        <tool>delete_memory</tool>
-        <tool>check_database_health</tool>
+        <tool>create_entities</tool>
+        <tool>add_observations</tool>
+        <tool>create_relations</tool>
+        <tool>delete_entities</tool>
+        <tool>delete_observations</tool>
+        <tool>delete_relations</tool>
+        <tool>read_graph</tool>
+        <tool>search_nodes</tool>
+        <tool>open_nodes</tool>
       </tools>
       <required_usage_points>
-        <point>At task START: Call `retrieve_memory` or `search_by_tag` to retrieve existing context about the project, user preferences, prior decisions, and known patterns BEFORE planning or acting.</point>
-        <point>After SIGNIFICANT WORK: Call `store_memory` to persist important findings, decisions, patterns discovered, and context for future tasks.</point>
-        <point>After COMPLETING a task: Store the outcome, any lessons learned, and follow-up items in persistent memory.</point>
+        <point>At task START: Call `read_graph` or `search_nodes` to retrieve existing context about the project, user preferences, prior decisions, and known patterns BEFORE planning or acting.</point>
+        <point>After SIGNIFICANT WORK: Call `create_entities` or `add_observations` to persist important findings, decisions, patterns discovered, and context for future tasks.</point>
+        <point>After COMPLETING a task: Store the outcome, any lessons learned, and follow-up items in the knowledge graph.</point>
         <point>When STARTING a new workflow or assignment: Search for prior related work, decisions, and context.</point>
       </required_usage_points>
       <what_to_store>
@@ -217,7 +225,10 @@ scope: repository
         <item>Cross-task context that would otherwise be lost between sessions</item>
         <item>Workflow state and progress checkpoints</item>
       </what_to_store>
-      <violation>Failing to read existing memory at task start or failing to persist important findings after task completion is a protocol violation.</violation>
+      <write_restriction>
+        ORCHESTRATOR ONLY: Only the orchestrator may call write tools (`create_entities`, `add_observations`, `create_relations`, `delete_entities`, `delete_observations`, `delete_relations`). Subagents MUST NOT call these tools — concurrent writes from multiple subagents corrupt the shared JSONL file. Subagents may call `read_graph`, `search_nodes`, and `open_nodes` (read-only).
+      </write_restriction>
+      <violation>Failing to read existing memory at task start or failing to persist important findings after task completion is a protocol violation. Subagents calling memory write tools is a protocol violation.</violation>
     </protocol>
 
     <protocol id="change_validation" enforcement="MANDATORY">
@@ -250,18 +261,18 @@ scope: repository
     <agent_checklist>
       <!-- Agents: verify you have completed these items on every non-trivial task -->
       <item>☐ Called sequential_thinking at task start to plan approach</item>
-      <item>☐ Called retrieve_memory / search_by_tag to retrieve prior context</item>
+      <item>☐ Called read_graph / search_nodes to retrieve prior context</item>
       <item>☐ Used sequential_thinking at key decision points during work</item>
       <item>☐ Ran validation (./scripts/validate.ps1 -All) before commit/push</item>
       <item>☐ Fixed all validation failures and re-verified clean</item>
-      <item>☐ Persisted important findings to persistent memory</item>
+      <item>☐ Persisted important findings to the knowledge graph</item>
       <item>☐ Monitored CI after push and confirmed green</item>
     </agent_checklist>
   </mandatory_tool_protocols>
 
   <agent_specific_guardrails>
     <rule>The Orchestrator agent delegates to specialists via the `task` tool — never writes code directly.</rule>
-    <rule>The Orchestrator MUST invoke `sequential_thinking` before planning any delegation and `retrieve_memory` before every new task to load prior project context.</rule>
+    <rule>The Orchestrator MUST invoke `sequential_thinking` before planning any delegation and `read_graph` or `search_nodes` before every new task to load prior project context.</rule>
     <rule>ALL agents MUST follow the mandatory_tool_protocols defined above — sequential thinking, memory, and change validation are not optional.</rule>
     <rule>Prompt assembly pipeline:
       1. Read template from `.github/workflows/prompts/orchestrator-agent-prompt.md`.
@@ -348,13 +359,14 @@ scope: repository
     </instruction>
     <instruction id="memory_default_usage" enforcement="MANDATORY">
       <applyTo>*</applyTo>
-      <title>Persistent Memory — MANDATORY for all non-trivial tasks</title>
-      <tools><tool>store_memory</tool><tool>retrieve_memory</tool><tool>search_by_tag</tool><tool>delete_memory</tool><tool>check_database_health</tool></tools>
+      <title>Knowledge Graph Memory — MANDATORY for all non-trivial tasks</title>
+      <tools><tool>create_entities</tool><tool>add_observations</tool><tool>create_relations</tool><tool>delete_entities</tool><tool>delete_observations</tool><tool>delete_relations</tool><tool>read_graph</tool><tool>search_nodes</tool><tool>open_nodes</tool></tools>
       <guidance>
         **MUST USE** for all non-trivial requests. This is a mandatory protocol, not a suggestion.
         See `mandatory_tool_protocols.persistent_memory` for full requirements.
-        Invoke at: task start (retrieve_memory/search_by_tag), after significant work (store_memory),
+        Invoke at: task start (read_graph/search_nodes), after significant work (create_entities/add_observations),
         and after task completion (persist outcomes and lessons learned).
+        **WRITE RESTRICTION — ORCHESTRATOR ONLY**: Only the orchestrator may call write tools. Subagents call read-only tools only.
         Skipping memory operations is a protocol violation.
       </guidance>
     </instruction>

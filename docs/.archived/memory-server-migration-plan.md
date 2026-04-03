@@ -3,7 +3,7 @@
 ## From: `@modelcontextprotocol/server-memory` (JSONL, Node/npx)
 ## To: `mcp-memory-service` (SQLite-vec, Python/uvx)
 
-**Status:** IMPLEMENTED (reference instance: `intel-agency/workflow-orchestration-service` branch `feature/standalone-orchestration-service-migration`)  
+**Status:** ~~IMPLEMENTED~~ **REVERTED (2026-04-02)** — cold-start package download (~2.5GB) blocked orchestrator; race condition fixed via instructions instead. See Section 13.  
 **Date:** 2026-03-29  
 **Author:** Copilot — research, plan, and implementation  
 **Post-Implementation Update:** Revised with findings from first implementation run to serve as the reference guide for applying this migration to the template repo and future cloned instances.
@@ -419,6 +419,8 @@ The migration is fully reversible in a single git revert.
 
 **Implementation completed in reference instance.** This plan is now the reference for porting to the template repo.
 
+> ⚠️ **REVERTED 2026-04-02:** This migration was applied to the template repo and immediately reverted. Do not re-apply without resolving the cold-start package download problem (see Section 13).
+
 ---
 
 ## 12. Lessons Learned (Post-Implementation)
@@ -438,3 +440,56 @@ The migration is fully reversible in a single git revert.
 7. **Documentation files are exempt.** The migration plan doc itself, archived docs, and plan_docs will still contain old tool names as historical references. This is correct — only active config, agent instructions, and runtime code need updating.
 
 8. **Bulk-edit efficiency.** The 17 non-orchestrator agents in each directory (`.opencode/agents/` and `.factory/droids/`) have identical replacement patterns. Use multi-file find-and-replace tooling (34 replacements per directory can be batched into a single operation).
+
+---
+
+## 13. REVERSION — 2026-04-02
+
+**Status: THIS MIGRATION WAS REVERTED.** The template repo was rolled back to `@modelcontextprotocol/server-memory` on 2026-04-02. See commits `69bb982`, `180859f`.
+
+### Why It Was Reverted
+
+#### Root cause: Cold-start package download (~2.5GB) blocks the orchestrator
+
+`mcp-memory-service` uses `sentence-transformers` for semantic search, which pulls in the full PyTorch + ONNX + CUDA stack at runtime via `uvx`. On a cold devcontainer (no uv package cache), the first invocation downloads **~2.5GB** of packages before the MCP server can respond. This was observed in production:
+
+- **Evidence:** Forensic analysis of run `intel-agency/convo-content-buddy-bravo61` workflow run `#23929140287`
+- **Symptom:** 43-minute gap in all log output between 01:04:48 UTC and 01:47:46 UTC — the orchestrator was stuck waiting for `mcp-memory-service` to initialize
+- **Result:** Watchdog killed the process at 01:47:46 (SIGTERM, exit 143, `IDLE_TIMEOUT_SECS=900`)
+- **Zero useful work completed** — the entire workflow run failed before the orchestrator wrote a single line of output
+
+This is a structural problem with any fresh clone of the template. GitHub Actions runners do not persist the uv package cache across workflow runs by default, and the devcontainer used here (sourced from the external prebuild image) also has no pre-installed `mcp-memory-service` packages.
+
+#### The premise was wrong: the race condition fix was unnecessary
+
+The original problem was concurrent subagent writes to `memory.jsonl` corrupting the file. The SQLite-WAL approach was valid, but the simpler fix is to enforce at the instruction level that **only the orchestrator writes to memory**. Subagents can read but never write — eliminating the concurrency entirely without any infrastructure change.
+
+### What We Reverted To
+
+| Aspect | Reverted back to |
+|---|---|
+| **Runtime** | `npx -y @modelcontextprotocol/server-memory` |
+| **Backend** | JSONL file (`.memory/memory.jsonl`) |
+| **Size** | ~30MB (Node.js package, no ML deps) |
+| **Cold-start** | Near-instant (npx caches after first pull) |
+| **Tools** | 9 knowledge-graph tools: `create_entities`, `add_observations`, `create_relations`, `delete_entities`, `delete_observations`, `delete_relations`, `read_graph`, `search_nodes`, `open_nodes` |
+| **Env var** | `MEMORY_FILE_PATH=${containerWorkspaceFolder}/.memory/memory.jsonl` |
+
+### How the Race Condition Was Fixed
+
+Rather than replacing the server, the race condition is now prevented via agent instructions:
+
+- **Orchestrator only** may call memory write tools (`create_entities`, `add_observations`, `create_relations`, `delete_entities`, `delete_observations`, `delete_relations`)
+- **All subagents** are restricted to read-only tools (`read_graph`, `search_nodes`, `open_nodes`)
+- Subagent files replace "persist findings via `create_entities`" with "report findings to the orchestrator for knowledge graph persistence"
+- The write restriction is stated explicitly in:
+  - Both `orchestrator.md` files (Knowledge Graph Memory section)
+  - `orchestrator-agent-prompt.md` (MANDATORY COMPLETION section)
+  - `AGENTS.md` (`mandatory_tool_protocols.persistent_memory` — new `<write_restriction>` element)
+  - `local_ai_instruction_modules/ai-development-instructions.md`
+
+Since the orchestrator is a single process (not parallelized), there is now only ever one writer at a time, and the race condition cannot occur.
+
+### Files Changed in Reversion
+
+Same 45 files as the original migration, applied in reverse. Validated with `pwsh -NoProfile -File ./scripts/validate.ps1 -All` — 8 pass, 0 fail.
