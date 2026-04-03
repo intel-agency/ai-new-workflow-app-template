@@ -145,28 +145,45 @@ Ref: refs/heads/main
 SHA: local-$epochSeconds
 "@
 
-# Read prompt template
-$templateContent = Get-Content -LiteralPath $PromptTemplate -Raw
+# Read prompt template lines (for marker search)
+$templateLines = Get-Content -LiteralPath $PromptTemplate
 
 # Read raw fixture text (preserves original formatting)
 $fixtureRaw = Get-Content -LiteralPath $FixtureFile -Raw
 
-# Assemble: template + event context + event JSON
-$assembled = @"
-$($templateContent)
+# Find the {{__EVENT_DATA__}} marker — same approach as assemble-orchestrator-prompt.ps1
+$markerIndex = -1
+for ($i = 0; $i -lt $templateLines.Count; $i++) {
+    if ($templateLines[$i].Contains('{{__EVENT_DATA__}}')) {
+        $markerIndex = $i
+        break
+    }
+}
 
+if ($markerIndex -lt 0) {
+    $beforeMarker = $templateLines
+} elseif ($markerIndex -eq 0) {
+    $beforeMarker = @()
+} else {
+    $beforeMarker = $templateLines[0..($markerIndex - 1)]
+}
+
+$eventBlock = @"
 ## Event Context
 
 ``````
 $contextHeader
 ``````
-
-## __EVENT_DATA__
-
-``````json
-$($fixtureRaw.TrimEnd())
-``````
 "@
+
+# Assemble: lines before marker, then event context + fixture JSON
+$assembled = @(
+    $beforeMarker
+    $eventBlock
+    '```json'
+    $fixtureRaw.TrimEnd()
+    '```'
+) -join "`n"
 
 Set-Content -Path $OutputFile -Value $assembled -NoNewline
 $bytes = (Get-Item $OutputFile).Length

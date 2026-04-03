@@ -157,12 +157,15 @@ if ($GhcrLogin) {
 # 5. Environment summary
 # ---------------------------------------------------------------------------
 function Get-MaskedValue {
-    param([string]$VarName)
+    param(
+        [string]$VarName,
+        [switch]$Required
+    )
     $val = [System.Environment]::GetEnvironmentVariable($VarName, 'Process')
     if (-not [string]::IsNullOrEmpty($val)) {
         return "SET ($($val.Length) chars)"
     }
-    return 'not set (optional)'
+    return if ($Required) { 'not set (required)' } else { 'not set (optional)' }
 }
 
 $portValue = [System.Environment]::GetEnvironmentVariable('OPENCODE_SERVER_PORT', 'Process')
@@ -170,9 +173,9 @@ if ([string]::IsNullOrEmpty($portValue)) { $portValue = '4096 (default)' }
 
 Write-Host ''
 Write-LogMessage '=== Environment Summary ==='
-Write-LogMessage "  GH_ORCHESTRATION_AGENT_TOKEN: $(Get-MaskedValue 'GH_ORCHESTRATION_AGENT_TOKEN')"
-Write-LogMessage "  ZHIPU_API_KEY:                $(Get-MaskedValue 'ZHIPU_API_KEY')"
-Write-LogMessage "  KIMI_CODE_..._API_KEY:        $(Get-MaskedValue 'KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY')"
+Write-LogMessage "  GH_ORCHESTRATION_AGENT_TOKEN: $(Get-MaskedValue 'GH_ORCHESTRATION_AGENT_TOKEN' -Required)"
+Write-LogMessage "  ZHIPU_API_KEY:                $(Get-MaskedValue 'ZHIPU_API_KEY' -Required)"
+Write-LogMessage "  KIMI_CODE_..._API_KEY:        $(Get-MaskedValue 'KIMI_CODE_ORCHESTRATOR_AGENT_API_KEY' -Required)"
 Write-LogMessage "  OPENAI_API_KEY:               $(Get-MaskedValue 'OPENAI_API_KEY')"
 Write-LogMessage "  GEMINI_API_KEY:               $(Get-MaskedValue 'GEMINI_API_KEY')"
 Write-LogMessage "  OPENCODE_SERVER_PORT:         $portValue"

@@ -82,7 +82,6 @@ $LabelDisplay = if ([string]::IsNullOrEmpty($Label)) { 'N/A' } else { $Label }
 # Cross-platform temp paths
 # ---------------------------------------------------------------------------
 $TraceArtifactsDir = Join-Path ([IO.Path]::GetTempPath()) 'trace-artifacts'
-$TraceBundleDir    = Join-Path ([IO.Path]::GetTempPath()) 'trace-bundle'
 
 function Write-DevcontainerWarning {
     param(

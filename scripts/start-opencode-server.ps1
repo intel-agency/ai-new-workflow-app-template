@@ -153,13 +153,13 @@ $serverPid = $null
 $stderrLog = $null
 
 if ($IsLinux) {
-    $command = "setsid opencode serve --hostname " +
+    $command = "setsid opencode serve --hostname '" +
         [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($Hostname) +
-        " --port " +
+        "' --port '" +
         [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($Port) +
-        " --log-level " +
+        "' --log-level '" +
         [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($LogLevel) +
-        " --print-logs >> '" +
+        "' --print-logs >> '" +
         [System.Management.Automation.Language.CodeGeneration]::EscapeSingleQuotedStringContent($LogFile) +
         "' 2>&1 < /dev/null & echo `$!"
 

@@ -33,7 +33,11 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$env:GH_PAGER = 'cat'
+if ($IsWindows) {
+    $env:GH_PAGER = 'more'
+} else {
+    $env:GH_PAGER = 'cat'
+}
 
 $Title = 'orchestrate-dynamic-workflow'
 $Body = @'
