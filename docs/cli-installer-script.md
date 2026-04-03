@@ -12,7 +12,7 @@ Create a pwsh `.ps1` script to install all AI inference CLI clients.
 - Install using bun (not npm)
 - Validate installations, report validated installed/updated version
 - Run in ubuntu/debian/mint linux/WSL bash AND Windows pwsh — one script
-- Arguments: `--update`, `--install`, `--validate`, `--report`
+- Arguments: `-Update`, `-Install`, `-Validate`, `-Report` (when invoking from bash via `pwsh`, pass these PowerShell switches exactly as shown)
 
 ---
 

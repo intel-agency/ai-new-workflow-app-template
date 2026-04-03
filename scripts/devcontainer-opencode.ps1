@@ -67,10 +67,10 @@ param(
     [string]$Command,
 
     [Parameter(Mandatory = $false)]
-    [string]$DevcontainerConfig = ($env:DEVCONTAINER_CONFIG ?? '.devcontainer/devcontainer.json'),
+    [string]$DevcontainerConfig = $(if ([string]::IsNullOrWhiteSpace($env:DEVCONTAINER_CONFIG)) { '.devcontainer/devcontainer.json' } else { $env:DEVCONTAINER_CONFIG }),
 
     [Parameter(Mandatory = $false)]
-    [string]$WorkspaceFolder = ($env:WORKSPACE_FOLDER ?? '.'),
+    [string]$WorkspaceFolder = $(if ([string]::IsNullOrWhiteSpace($env:WORKSPACE_FOLDER)) { '.' } else { $env:WORKSPACE_FOLDER }),
 
     [Parameter(Mandatory = $false)]
     [string]$PromptFile,
@@ -79,10 +79,10 @@ param(
     [string]$PromptString,
 
     [Parameter(Mandatory = $false)]
-    [string]$OpenCodeServerUrl = ($env:OPENCODE_SERVER_URL ?? 'http://127.0.0.1:4096'),
+    [string]$OpenCodeServerUrl = $(if ([string]::IsNullOrWhiteSpace($env:OPENCODE_SERVER_URL)) { 'http://127.0.0.1:4096' } else { $env:OPENCODE_SERVER_URL }),
 
     [Parameter(Mandatory = $false)]
-    [string]$OpenCodeServerDir = ($env:OPENCODE_SERVER_DIR ?? '')
+    [string]$OpenCodeServerDir = $(if ([string]::IsNullOrWhiteSpace($env:OPENCODE_SERVER_DIR)) { '' } else { $env:OPENCODE_SERVER_DIR })
 )
 
 $ErrorActionPreference = 'Stop'

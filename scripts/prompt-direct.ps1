@@ -46,20 +46,20 @@ param(
     [string]$PromptFile,
 
     [Parameter(Mandatory = $false)]
-    [string]$Model = ($env:OPENCODE_MODEL ?? 'zai-coding-plan/glm-5'),
+    [string]$Model = $(if ([string]::IsNullOrWhiteSpace($env:OPENCODE_MODEL)) { 'zai-coding-plan/glm-5' } else { $env:OPENCODE_MODEL }),
 
     [Parameter(Mandatory = $false)]
-    [string]$Agent = ($env:OPENCODE_AGENT ?? 'orchestrator'),
+    [string]$Agent = $(if ([string]::IsNullOrWhiteSpace($env:OPENCODE_AGENT)) { 'orchestrator' } else { $env:OPENCODE_AGENT }),
 
     [Parameter(Mandatory = $false)]
     [ValidateSet('DEBUG', 'INFO', 'WARN', 'ERROR')]
-    [string]$LogLevel = ($env:OPENCODE_LOG_LEVEL ?? 'INFO'),
+    [string]$LogLevel = $(if ([string]::IsNullOrWhiteSpace($env:OPENCODE_LOG_LEVEL)) { 'INFO' } else { $env:OPENCODE_LOG_LEVEL }),
 
     [Parameter(Mandatory = $false)]
-    [string]$DevcontainerConfig = ($env:DEVCONTAINER_CONFIG ?? '.devcontainer/devcontainer.json'),
+    [string]$DevcontainerConfig = $(if ([string]::IsNullOrWhiteSpace($env:DEVCONTAINER_CONFIG)) { '.devcontainer/devcontainer.json' } else { $env:DEVCONTAINER_CONFIG }),
 
     [Parameter(Mandatory = $false)]
-    [string]$WorkspaceFolder = ($env:WORKSPACE_FOLDER ?? '.')
+    [string]$WorkspaceFolder = $(if ([string]::IsNullOrWhiteSpace($env:WORKSPACE_FOLDER)) { '.' } else { $env:WORKSPACE_FOLDER })
 )
 
 $ErrorActionPreference = 'Stop'
