@@ -16,7 +16,7 @@ set -euo pipefail
 
 DEVCONTAINER_CONFIG="${DEVCONTAINER_CONFIG:-.devcontainer/devcontainer.json}"
 WORKSPACE_FOLDER="${WORKSPACE_FOLDER:-.}"
-MODEL="${OPENCODE_MODEL:-zai-coding-plan/glm-5}"
+MODEL="${OPENCODE_MODEL:-zai-coding-plan/glm-5.1}"
 AGENT="${OPENCODE_AGENT:-orchestrator}"
 LOG_LEVEL="${OPENCODE_LOG_LEVEL:-INFO}"
 

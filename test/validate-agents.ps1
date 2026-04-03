@@ -68,7 +68,7 @@ $agentsPath = Resolve-Path $AgentsDir  -ErrorAction Stop
 $configPath = Resolve-Path $ConfigFile -ErrorAction Stop
 
 $config = Get-Content -Raw $configPath | ConvertFrom-Json
-$defaultModel = $config.model ?? "zai-coding-plan/glm-5"
+$defaultModel = $config.model ?? "zai-coding-plan/glm-5.1"
 
 # ── collect agents ────────────────────────────────────────────────────────────
 

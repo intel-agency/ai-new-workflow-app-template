@@ -30,21 +30,21 @@
         "glm-4.7": {
           "name": "GLM-4.7",
           "limit": {
-            "context": 200000,
+            "context": 204800,
             "output": 131072
           }
         },
         "glm-4.7-flash": {
           "name": "GLM-4.7-Flash",
           "limit": {
-            "context": 200000,
+            "context": 204800,
             "output": 131072
           }
         },
         "glm-4.7-flashx": {
           "name": "GLM-4.7-FlashX",
           "limit": {
-            "context": 200000,
+            "context": 204800,
             "output": 131072
           }
         }
@@ -137,7 +137,7 @@
     }
   },
   "model": "zai-coding-plan/glm-5.1",
-  "small_model": "zai-coding-plan/glm-4.7-flashx",
+  "small_model": "zai-coding-plan/glm-5-turbo",
   "permission": {
     "external_directory": {
       "/tmp/*": "allow"
