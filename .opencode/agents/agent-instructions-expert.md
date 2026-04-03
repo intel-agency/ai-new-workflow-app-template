@@ -1,8 +1,8 @@
 ---
 description: Retrieves and inserts guidance from the canonical agent-instructions repository; returns minimal focused responses to orchestrating agents
 mode: subagent
-model: zai-coding-plan/glm-5
-temperature: 0.2
+model: openai/gpt-5.4`
+temperature: 0.0
 tools:
   read: true
   write: true

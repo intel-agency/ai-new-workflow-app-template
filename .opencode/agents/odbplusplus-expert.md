@@ -1,7 +1,7 @@
 ---
 description: Expert on ODB++ spec and OdbDesign codebase; produces distilled briefs with citations
 mode: subagent
-model: zai-coding-plan/glm-5.1
+model: openai/gpt-5.4
 temperature: 0.2
 tools:
   read: true
