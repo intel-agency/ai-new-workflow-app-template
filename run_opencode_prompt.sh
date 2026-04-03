@@ -275,7 +275,7 @@ if [[ -f "$SERVER_LOG" ]]; then
     mkfifo "$_server_log_pipe"
     tail -f -n +$(( _server_log_start_lines + 1 )) "$SERVER_LOG" 2>/dev/null > "$_server_log_pipe" &
     SERVER_TAIL_RAW_PID=$!
-    grep -Ev "$_SERVER_LOG_NOISE" < "$_server_log_pipe" | grep -v '^\s*$' | sed -u 's/^/[server] /' &
+    grep -Ev "$_SERVER_LOG_NOISE" < "$_server_log_pipe" | grep -v '^\s*$' | grep -Pv '^\s*[┌└├┤┐┘─]+\s*$' | sed -u 's/^/[server] /' &
     SERVER_TAIL_PID=$!
     rm -f "$_server_log_pipe"  # safe to remove after both ends are open
     echo "Server log tailer started (tail pid ${SERVER_TAIL_RAW_PID} filter pid ${SERVER_TAIL_PID}), streaming from line $(( _server_log_start_lines + 1 ))"
