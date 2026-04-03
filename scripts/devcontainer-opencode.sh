@@ -179,11 +179,11 @@ case "$COMMAND" in
                 fi
                 echo ""
                 echo "=== Memory ==="
-                mem="${MCP_MEMORY_SQLITE_PATH:-$PWD/.memory/memory.db}"
+                mem="${MEMORY_FILE_PATH:-$PWD/.memory/memory.jsonl}"
                 if [[ -f "$mem" ]]; then
-                    echo "Memory database: $mem ($(stat -c%s "$mem" 2>/dev/null || stat -f%z "$mem") bytes)"
+                    echo "Memory file: $mem ($(wc -l < "$mem") entries, $(wc -c < "$mem") bytes)"
                 else
-                    echo "Memory database: $mem (not found)"
+                    echo "Memory file: $mem (not found)"
                 fi
                 echo ""
                 echo "=== Recent Server Log (last 20 lines) ==="
