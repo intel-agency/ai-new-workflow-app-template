@@ -83,6 +83,8 @@ function Stop-StaleProcess {
     [CmdletBinding(SupportsShouldProcess)]
     param([int]$ProcessId)
 
+    if (-not $PSCmdlet.ShouldProcess("process $ProcessId", 'Stop')) { return }
+
     try { Stop-Process -Id $ProcessId -ErrorAction SilentlyContinue } catch { # Intentionally empty — process may already be gone }
 
     $gracefulTimeout = 5

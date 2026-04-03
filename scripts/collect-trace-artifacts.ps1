@@ -81,7 +81,12 @@ $LabelDisplay = if ([string]::IsNullOrEmpty($Label)) { 'N/A' } else { $Label }
 # ---------------------------------------------------------------------------
 # Cross-platform temp paths
 # ---------------------------------------------------------------------------
-$TraceArtifactsDir = Join-Path ([IO.Path]::GetTempPath()) 'trace-artifacts'
+$TraceArtifactsDir = Join-Path ([IO.Path]::GetTempPath()) "trace-artifacts-$RunId"
+
+# Clear stale artifacts from a prior attempt for this run
+if (Test-Path $TraceArtifactsDir) {
+    Remove-Item -Recurse -Force $TraceArtifactsDir
+}
 
 function Write-DevcontainerWarning {
     param(

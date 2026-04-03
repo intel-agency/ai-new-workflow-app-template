@@ -167,8 +167,10 @@ function Invoke-ToolInstall ($Tool) {
             gh extension install $Tool.Package
         }
         'kimi-installer' {
+            Write-Warning "  Kimi installer downloads and executes a remote script. Review the script at https://code.kimi.com/install.ps1 (Windows) or https://code.kimi.com/install.sh (Linux/macOS) before proceeding."
             if ($OnWindows) {
-                Invoke-RestMethod https://code.kimi.com/install.ps1 | Invoke-Expression
+                $installerScript = Invoke-RestMethod https://code.kimi.com/install.ps1
+                Invoke-Expression $installerScript
             } else {
                 bash -c 'curl -LsSf https://code.kimi.com/install.sh | bash'
             }
