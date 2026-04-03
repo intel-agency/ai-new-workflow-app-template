@@ -165,7 +165,7 @@ function Get-MaskedValue {
     if (-not [string]::IsNullOrEmpty($val)) {
         return "SET ($($val.Length) chars)"
     }
-    return if ($Required) { 'not set (required)' } else { 'not set (optional)' }
+    return $Required ? 'not set (required)' : 'not set (optional)'
 }
 
 $portValue = [System.Environment]::GetEnvironmentVariable('OPENCODE_SERVER_PORT', 'Process')
